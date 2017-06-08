@@ -1,0 +1,15 @@
+# EIDs metadata, specifically cell types
+EID_META='http://egg2.wustl.edu/roadmap/data/byFileType/metadata/EID_metadata.tab'
+
+WANTED='BLD.CD4.CD25M.TPC', 'BLD.CD8.NPC', 'BLD.CD14.PC', 'BLD.CD14.MONO', 'GI.CLN.MUC', 'GI.DUO.MUC', 'GI.RECT.MUC.29' 'GI.RECT.MUC.31'
+# BLD.CD14.MONO is from encode, TCP is both naive and memory, NPC only naive (MPC for memory)
+CONTROLS='FAT.ADIP.DR.MSC', 'FAT.ADIP.DR.MSC'
+# then add other controls XXX
+CLASSES='wanted','control'
+
+WANTED_MARKERS='H3K27ac', 'H3K4me1'
+
+BASE_URL_CONSOLIDATED='http://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/gappedPeak/'
+# we get the most robust and curated data 'consolidated' and gappedPeaks (suggested by them: http://egg2.wustl.edu/roadmap/web_portal/processed_data.html)
+#
+# # coords should be hg19, XXX check

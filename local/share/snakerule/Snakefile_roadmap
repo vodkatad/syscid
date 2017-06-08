@@ -1,0 +1,54 @@
+include: "snakemake"
+
+rule eid_info:
+    output: "eid_info"
+    params: url=EID_META
+    shell: "wget -O {output} {params.url}"
+
+# columns:
+#EID GROUP   COLOR   MNEMONIC    STD_NAME    EDACC_NAME  ANATOMY TYPE    AGE SEX SOLID_LIQUID    ETHNICITY   SINGLEDONOR_COMPOSITE
+#
+rule all_eids:
+    input: expand("{look}_eids", look=CLASSES)
+
+rule eids:
+    input: "eid_info"
+    output: "{look}_eids"
+    run:
+        if wildcards.look == 'wanted':
+            lookfor = WANTED
+        else:
+            lookfor = CONTROLS
+        with open(output[0], "w") as out:
+            with open(input[0], 'r') as info:
+                for l in info.readlines():
+                    l = l.rstrip()
+                    fields = l.split("\t")
+                    if fields[3] in lookfor:
+                        out.write(fields[0]+'\n')
+
+rule all_peaks:
+    input: expand("peaks_{mark}_{look}", mark=WANTED_MARKERS, look=CLASSES)
+
+# Snakemake would prefer to store EIDS in variables and no files?
+rule peaks:
+    input: "{look}_eids"
+    output: "peaks_{mark}_{look}"
+    run:
+        import urllib.request
+        #os.mkdir(wildcard.mark)
+        shell('mkdir -p peaks')
+        with open(output[0], 'w') as out:
+            with open(input[0], 'r') as eids_f:
+                for l in eids_f.readlines():
+                    l = l.rstrip()
+                    fields = l.split("\t")
+                    eid = fields[0]
+                    try:
+                        urllib.request.urlretrieve(BASE_URL_CONSOLIDATED+eid+'-'+wildcards.mark+'.gappedPeak.gz', 'peaks/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz')
+                    except: # HTTPError:
+                        out.write('missed\t'+wildcards.mark+'_'+wildcards.look+'_'+eid+"\t"+BASE_URL_CONSOLIDATED+eid+'-'+wildcards.mark+'.gappedPeak.gz\n')
+                out.write('#placeholder, should rethink this\n') 
+                #https://github.com/leipzig/SandwichesWithSnakemake
+
+## needs to check: if peaks_mark_look is not there we should remove peaks dir automatically (or change this rule to have its real output, I'm already metablabbing)
