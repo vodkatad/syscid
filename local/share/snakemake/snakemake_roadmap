@@ -1,10 +1,11 @@
+PRJ_DIR='/data/egrassi/snaketree/prj/syscid'
+SRC_DIR=PRJ_DIR+"/local/src/"
 # EIDs metadata, specifically cell types
 EID_META='http://egg2.wustl.edu/roadmap/data/byFileType/metadata/EID_metadata.tab'
 
-WANTED='BLD.CD4.CD25M.TPC', 'BLD.CD8.NPC', 'BLD.CD14.PC', 'BLD.CD14.MONO', 'GI.CLN.MUC', 'GI.DUO.MUC', 'GI.RECT.MUC.29' 'GI.RECT.MUC.31'
+WANTED='BLD.CD4.CD25M.TPC', 'BLD.CD8.NPC', 'BLD.CD14.PC', 'BLD.CD14.MONO', 'GI.CLN.MUC', 'GI.DUO.MUC', 'GI.RECT.MUC.29','GI.RECT.MUC.31'
 # BLD.CD14.MONO is from encode, TCP is both naive and memory, NPC only naive (MPC for memory)
-CONTROLS='FAT.ADIP.DR.MSC', 'FAT.ADIP.DR.MSC'
-# then add other controls XXX
+CONTROLS='FAT.ADIP.DR.MSC','STRM.MRW.MSC','STRM.CHON.MRW.DR.MSC','FAT.ADIP.NUC', 'BRN.HIPP.MID','MUS.SKLT.M','MUS.SKLT.F', 'SKIN.PEN.FRSK.FIB.01', 'SKIN.PEN.FRSK.FIB.02', 'SKIN.PEN.FRSK.KER.02', 'SKIN.PEN.FRSK.KER.03'
 CLASSES='wanted','control'
 
 WANTED_MARKERS='H3K27ac', 'H3K4me1'

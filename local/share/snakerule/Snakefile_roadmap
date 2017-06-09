@@ -52,3 +52,42 @@ rule peaks:
                 #https://github.com/leipzig/SandwichesWithSnakemake
 
 ## needs to check: if peaks_mark_look is not there we should remove peaks dir automatically (or change this rule to have its real output, I'm already metablabbing)
+
+#1 chrom
+#2 chromStart
+#3 chromEnd
+#4 name
+#5 score
+#6 strand
+#7 thickStart
+#8 thickEnd
+#9 itemRgb
+#10 blockCount
+#11 blockSizes
+#12 blockStarts
+#13 signalValue
+#14 pValue
+#15 qValue
+
+#
+#[egrassi@gncomp3 roadmap]$ for f in  peaks/*.gz; do zcat $f | cut -f 1,2,3,13,15 | awk -F'\t' -v OFS='\t' -vF=$f '{print F, $0}'; done | gzip > summary_peaks.gz
+#[egrassi@gncomp3 roadmap]$ zcat summary_peaks.gz | sed 's/\.gappedPeak\.gz//1; s/peaks\///1'  | tr "_" "\t"| /data/egrassi/bioinfotree/local/bin/translate -a <(cut -f 1,6 eid_info) 3  > summary_peaks_annot.gz
+rule sum_peak:
+    input: expand("peaks_{mark}_{look}", mark=WANTED_MARKERS, look=CLASSES)
+    output: "summary_peaks_annot.gz"
+    shell: 
+      """
+        for f in  peaks/*.gz; do zcat $f | cut -f 1,2,3,13,15 | awk -F'\t' -v OFS='\t' -vF=$f '{{print F, $0}}'; done \
+        | sed 's/\.gappedPeak\.gz//1; s/peaks\///1'  | tr "_" "\t"| /data/egrassi/bioinfotree/local/bin/translate -a <(cut -f 1,4 eid_info) 3 | gzip > {output}
+      """
+
+rule peaks_info:
+    input: "summary_peaks_annot.gz"
+    output: "peak_info.html"
+    params: SRC_DIR+"/plot_roadmap_peaks.Rmd"
+    shell:
+        """
+        WD=`pwd`; \\
+        Rscript -e \"require( 'rmarkdown' ); render('{params}', params=list(data='{input}', wd=\\"$WD\\"), output_file='{output}', output_dir=\\"$WD\\")\"
+        """
+

@@ -1,0 +1,58 @@
+---
+title: "Roadmap peaks info"
+author:
+    - "Elena Grassi"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    css: "wide.css"
+params:
+  data: placeholder
+  wd: placeholder
+---
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = normalizePath(params$wd))
+```
+
+## Signal and log10q in chosen and control tissues for H3K27Ac and H3k4me1 ##
+```{r boxplots, echo=FALSE}
+#, dev='svg'} produced a 167M file!
+library(ggplot2)
+library(gridExtra)
+data <- read.table(gzfile(params$data), sep="\t", header=FALSE)
+colnames(data) <- c("mark","class","eid", "desc","chr", "start","end","signal", "logq")
+#data$desc <- substr(data$desc, 0, 27)
+data$class <- as.factor(data$class)
+ac <- data[data$mark=="H3K27ac",]
+me <- data[data$mark=="H3K4me1",]
+
+plot_f <- function(column, title, x) {
+    ggplot(x, aes_string(x='desc', color='desc', y=column)) + geom_boxplot()+  theme(axis.text.x=element_blank())+ggtitle(title)
+}
+
+plotsac <- by(ac, as.factor(ac$class), function(x) {lapply(c("signal","logq"), plot_f, paste("K27Ac",x$class,sep="_"), x)  })
+plotsme <- by(me, as.factor(me$class), function(x) {lapply(c("signal","logq"), plot_f, paste("K4me1",x$class,sep="_"), x)  })
+
+#par does not work with by/ggplot/print inside lapply? with pdf output?
+#grid.arrange(plotsac[['wanted']][[1]], plotsac[['control']][[1]], ncol=2)
+print(plotsac[['wanted']][[1]])
+print(plotsac[['control']][[1]])
+print(plotsac[['wanted']][[2]])
+print(plotsac[['control']][[2]])
+print(plotsme[['wanted']][[1]])
+print(plotsme[['control']][[1]])
+print(plotsme[['wanted']][[2]])
+print(plotsac[['control']][[2]])
+#grid.arrange(plotsac[['wanted']][[2]], plotsac[['control']][[2]], ncol=2)
+#grid.arrange(plotsme[['wanted']][[1]], plotsme[['control']][[1]], ncol=2)
+#grid.arrange(plotsme[['wanted']][[2]], plotsme[['control']][[2]], ncol=2)
+```
+
+
+## N of peaks ##
+```{r numbers, echo=FALSE}
+knitr::kable(table(data$class, data$mark))
+knitr::kable(table(data$desc, data$mark))
+```
+
+
