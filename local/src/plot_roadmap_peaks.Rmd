@@ -23,48 +23,29 @@ data <- read.table(gzfile(params$data), sep="\t", header=FALSE)
 colnames(data) <- c("mark","class","eid", "desc","chr", "start","end","signal", "logq")
 #data$desc <- substr(data$desc, 0, 27)
 data$class <- as.factor(data$class)
-ac <- data[data$mark=="H3K27ac",]
-me <- data[data$mark=="H3K4me1",]
-
-ac$desc <- factor(ac$desc, levels=unique(ac$desc[order(ac$class, ac$desc)]), ordered=TRUE)
-me$desc <- factor(me$desc, levels=unique(me$desc[order(me$class, me$desc)]), ordered=TRUE)
-
+data$desc <- factor(data$desc, levels=unique(data$desc[order(data$class, data$desc)]), ordered=TRUE)
+data$length <- data$end - data$start
+palette <- c("#E69F00", "#56B4E9")
 plot_f <- function(column, title, x) {
-    ggplot(x, aes_string(x='desc', color='class', y=column)) + geom_boxplot()+ggtitle(title)+coord_flip()
+    print(ggplot(x, aes_string(x='desc', color='class', y=column)) + geom_boxplot()+ggtitle(title)+coord_flip()+scale_colour_manual(values=palette))
 }
 
-# if we put together wanted and control with ggplot we can use by for the two markers...
-#plotsac <- by(ac, as.factor(ac$class), function(x) {lapply(c("signal","logq"), plot_f, paste("K27Ac",x$class,sep="_"), x)  })
-#plotsme <- by(me, as.factor(me$class), function(x) {lapply(c("signal","logq"), plot_f, paste("K4me1",x$class,sep="_"), x)  })
-plotsac <- lapply(c("signal","logq"), plot_f, "K27Ac", ac) 
-plotsme <- lapply(c("signal","logq"), plot_f, "K4me1", me) 
-
-
-print(plotsac[[1]])
-print(plotsac[[2]])
-print(plotsme[[1]])
-print(plotsme[[2]])
+plots <- by(data, as.factor(data$mark), function(x) {lapply(c("signal","logq","length"), plot_f, x$mark, x)  })
 
 #par does not work with by/ggplot/print inside lapply? with pdf output?
 #grid.arrange(plotsac[['wanted']][[1]], plotsac[['control']][[1]], ncol=2)
-#print(plotsac[['wanted']][[1]])
-#print(plotsac[['control']][[1]])
-#print(plotsac[['wanted']][[2]])
-#print(plotsac[['control']][[2]])
-#print(plotsme[['wanted']][[1]])
-#print(plotsme[['control']][[1]])
-#print(plotsme[['wanted']][[2]])
-#print(plotsac[['control']][[2]])
 #grid.arrange(plotsac[['wanted']][[2]], plotsac[['control']][[2]], ncol=2)
 #grid.arrange(plotsme[['wanted']][[1]], plotsme[['control']][[1]], ncol=2)
 #grid.arrange(plotsme[['wanted']][[2]], plotsme[['control']][[2]], ncol=2)
 ```
 
 
-## N of peaks ##
+## N. and lengths of peaks ##
 ```{r numbers, echo=FALSE}
 knitr::kable(table(data$class, data$mark))
 knitr::kable(table(data$desc, data$mark))
+summary(data$length)
 ```
 
+Possible tissues: http://egg2.wustl.edu/roadmap/web_portal/processed_data.html#ChipSeq_DNaseSeq
 
