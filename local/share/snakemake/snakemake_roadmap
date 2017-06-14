@@ -3,14 +3,25 @@ SRC_DIR=PRJ_DIR+"/local/src/"
 # EIDs metadata, specifically cell types
 EID_META='http://egg2.wustl.edu/roadmap/data/byFileType/metadata/EID_metadata.tab'
 
-WANTED='BLD.CD4.CD25M.TPC', 'BLD.CD8.NPC', 'BLD.CD14.PC', 'BLD.CD14.MONO', 'GI.CLN.MUC', 'GI.DUO.MUC', 'GI.RECT.MUC.29','GI.RECT.MUC.31'
+WANTED='BLD.CD4.CD25.CD127M.TREGPC', 'BLD.CD14.PC', 'BLD.CD14.MONO','BLD.CD56.PC','BLD.CD4.MPC','BLD.CD4.NPC','BLD.CD4.CD25M.TPC'
+# BLD.CD4.CD25M.IL17P.PL.TPC      Primary T helper 17 cells PMA-I stimulated 
+# treg, cd14 roadmap, cd14 encode, nk, t helper memory, t helper naive
 # BLD.CD14.MONO is from encode, TCP is both naive and memory, NPC only naive (MPC for memory)
 CONTROLS='FAT.ADIP.DR.MSC','STRM.MRW.MSC','STRM.CHON.MRW.DR.MSC','FAT.ADIP.NUC', 'BRN.HIPP.MID','MUS.SKLT.M','MUS.SKLT.F', 'SKIN.PEN.FRSK.FIB.01', 'SKIN.PEN.FRSK.FIB.02', 'SKIN.PEN.FRSK.KER.02', 'SKIN.PEN.FRSK.KER.03'
 CLASSES='wanted','control'
 
+PAIRINGS={'mono': ['E029','E124'], 'th': ['E037','E038','E043','E044'], 'nk': ['E046'] }
+#[egrassi@gncomp3 roadmap]$ ls *merged.gappedPeaks.gz
+#mono_H3K27ac.merged.gappedPeaks.gz  nk_H3K27ac.merged.gappedPeaks.gz  th_H3K27ac.merged.gappedPeaks.gz
+#mono_H3K4me1.merged.gappedPeaks.gz  nk_H3K4me1.merged.gappedPeaks.gz  th_H3K4me1.merged.gappedPeaks.gz
+LOO={'mono': ['nk', 'th'], 'nk': ['mono', 'th'], 'th': ['mono','nk']}
+
+LINES='mono','th','nk'
 WANTED_MARKERS='H3K27ac', 'H3K4me1'
 
-BASE_URL_CONSOLIDATED='http://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/gappedPeak/'
+BASE_URL_CONSOLIDATED_PEAKS='http://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/gappedPeak/'
+BASE_URL_CONSOLIDATED_BW_SIGNAL='http://egg2.wustl.edu/roadmap/data/byFileType/signal/consolidated/macs2signal/foldChange/'
+BASE_URL_CONSOLIDATED_BW_PVAL='http://egg2.wustl.edu/roadmap/data/byFileType/signal/consolidated/macs2signal/pval/'
 # we get the most robust and curated data 'consolidated' and gappedPeaks (suggested by them: http://egg2.wustl.edu/roadmap/web_portal/processed_data.html)
 #
-# # coords should be hg19, XXX check
+# # coords are hg19.

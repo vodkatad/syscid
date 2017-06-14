@@ -30,14 +30,18 @@ rule eids:
 rule all_peaks:
     input: expand("peaks_{mark}_{look}", mark=WANTED_MARKERS, look=CLASSES)
 
+rule all_bigwigs:
+    input: expand("bigwig_{mark}_wanted", mark=WANTED_MARKERS)
+
 # Snakemake would prefer to store EIDS in variables and no files?
+# Note that it has run two times for the two kind of bigwigs, to rerun remove commented lines.
 rule peaks:
     input: "{look}_eids"
-    output: "peaks_{mark}_{look}"
+    output: "{kind}_{mark}_{look}"
     run:
         import urllib.request
         #os.mkdir(wildcard.mark)
-        shell('mkdir -p peaks')
+        shell('mkdir -p '+wildcards.kind)
         with open(output[0], 'w') as out:
             with open(input[0], 'r') as eids_f:
                 for l in eids_f.readlines():
@@ -45,9 +49,16 @@ rule peaks:
                     fields = l.split("\t")
                     eid = fields[0]
                     try:
-                        urllib.request.urlretrieve(BASE_URL_CONSOLIDATED+eid+'-'+wildcards.mark+'.gappedPeak.gz', 'peaks/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz')
+                        if wildcards.kind == "peaks":
+                            url = BASE_URL_CONSOLIDATED_PEAKS+eid+'-'+wildcards.mark+'.gappedPeak.gz'
+                            urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz')
+                        elif wildcards.kind == "bigwig":
+                            #url = BASE_URL_CONSOLIDATED_BW_SIGNAL+eid+'-'+wildcards.mark+'.fc.signal.bigwig'
+                            url2 = BASE_URL_CONSOLIDATED_BW_PVAL+eid+'-'+wildcards.mark+'.pval.signal.bigwig'
+                            #urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.fc.signal.bigwig')
+                            urllib.request.urlretrieve(url2, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.pval.signal.bigwig')
                     except: # HTTPError:
-                        out.write('missed\t'+wildcards.mark+'_'+wildcards.look+'_'+eid+"\t"+BASE_URL_CONSOLIDATED+eid+'-'+wildcards.mark+'.gappedPeak.gz\n')
+                        out.write('missed\t'+wildcards.mark+'_'+wildcards.look+'_'+eid+"\t"+url+'\n')
                 out.write('#placeholder, should rethink this\n') 
                 #https://github.com/leipzig/SandwichesWithSnakemake
 
@@ -91,3 +102,50 @@ rule peaks_info:
         Rscript -e \"require( 'rmarkdown' ); render('{params}', params=list(data='{input}', wd=\\"$WD\\"), output_file='{output}', output_dir=\\"$WD\\")\"
         """
 
+# we merge peaks for the same group of cells
+
+rule all_merged_lines:
+    input: expand("{cells}_{mark}.merged.gappedPeaks.gz", cells=LINES, mark=WANTED_MARKERS)
+
+
+def get_peaks(wildcards):
+    list_eid = PAIRINGS[wildcards.cells]
+    return ["peaks/"+wildcards.mark+"_wanted_"+eid+".gappedPeak.gz" for eid in list_eid]
+    
+rule merged_peaks:
+    input: 
+        get_peaks
+    output: "{cells}_{mark}.merged.gappedPeaks.gz"
+    shell:
+        "zcat {input} | sort -k1,1 -k2,2n | bedtools merge -c 13,14,15 -o collapse,collapse,collapse -i - | gzip > {output}"
+
+#[egrassi@gncomp3 roadmap]$ bedtools intersect -wa -v -a mono_H3K4me1.merged.gappedPeaks.gz -b <(zcat nk_H3K4me1.merged.gappedPeaks.gz th_H3K4me1.merged.gappedPeaks.gz)  > prova2
+#[egrassi@gncomp3 roadmap]$ bedtools intersect -wa -v -a mono_H3K4me1.merged.gappedPeaks.gz -b <(zcat nk_H3K4me1.merged.gappedPeaks.gz th_H3K4me1.merged.gappedPeaks.gz)  > prova
+#[egrassi@gncomp3 roadmap]$ 
+#[egrassi@gncomp3 roadmap]$ diff prova prova2
+#[egrassi@gncomp3 roadmap]$ wc -l prova
+#24815 prova
+#[egrassi@gncomp3 roadmap]$ zcat mono_H3K4me1.merged.gappedPeaks.gz | wc -l
+#73920
+
+# could also be done without the LOO manually created dictionary but globbing for things different than wildcards.cells XXX FIXME
+def leave_one_out(wildcards):
+    import glob
+    res = []
+    #res = wildcards.cells+"_"+wildcards.mark+"merged.gappedPeaks.gz" # first one is always our specific wanted cell line.
+    # no, needs to return a named dictionary with a single element and then a list :( Hardcoding numbers in the rule right now?
+    # or build the input there... but won't have right dependencies tree!
+    for cell in LOO[wildcards.cells]:
+        other = glob.glob("{}_{}.merged.gappedPeaks.gz".format(cell, wildcards.mark))
+        assert len(other) == 1
+        res.append(other[0])
+    return res
+
+rule all_specific:
+    input: expand("{cells}_{mark}.specific.peaks.gz", cells=LINES, mark=WANTED_MARKERS)
+
+rule specific_peaks:
+    input:
+        leave_one_out
+    output: "{cells}_{mark}.specific.peaks.gz"
+    shell: "bedtools intersect -v -a {wildcards.cells}_{wildcards.mark}.merged.gappedPeaks.gz -b <(zcat {input}) | gzip > {output}"
