@@ -1,0 +1,51 @@
+\documentclass{article}
+
+\title{Huang list}
+\begin{document}
+<<include=FALSE>>=
+library(knitr)
+knitr::opts_knit$set(root.dir = "/home/data/Dropbox/work/syscid/")
+@
+
+<<supplementary, echo=FALSE, message=FALSE>>=
+library(gdata, quietly=TRUE)
+supp_sets <- read.xls("Supplementary Table 1.xlsx", sheet="list of credible sets")
+supp_snps <- read.xls("Supplementary Table 1.xlsx", sheet="list of variants")
+n_loci <- length(unique(supp_sets[supp_sets$tier2=="No",]$HD))
+simplify_by_output = function(by_output) {
+    null_ind = unlist(lapply(by_output, is.null))  # by() returns NULL for combinations of grouping variables for which there are no data. rbind() ignores those, so you have to keep track of them.
+    by_df = do.call(rbind, as.list(by_output))  # Combine the results into a data frame.
+    return(cbind(expand.grid(dimnames(by_output))[!null_ind, ], by_df))  # Add columns identifying groups, discarding names of groups for which no data exist.
+}
+nsign <- by(supp_sets, as.factor(supp_sets$HD), function(x) {length(x$signal)})
+nsign2 <- simplify_by_output(nsign)
+hist(nsign2[,2], main="n signals in loci", xlab = "n signals")
+nc <- supp_snps[ supp_snps$tier2=="No" & supp_snps$Coding=="",]
+num_nc <- length(unique(nc$variant))
+supp <-  supp_sets[supp_sets$tier2=="No",]
+lens <- as.numeric(gsub(",","", supp$credible_len, fixed=TRUE))
+plot(density(lens), main="lengths of loci")
+plot(density(lens), xlim=c(0,500000), main="zoom")
+supp$merge <- paste(supp$HD, supp$signal, sep="_")
+nc$merge <- paste(nc$HD, nc$signal, sep="_")
+mdata <- merge(nc, supp, by="merge")
+mdata$Coding <- NULL
+mdata$tier2.x <- NULL
+mdata$tier2.y <- NULL
+mdata$is_lead <- as.character(mdata$variant.lead) == as.character(mdata$variant)
+# 
+mdata_to_print <- mdata[, c("merge","HD.x","chr.x", "credible_nSNP.x","variant", "position", "info", "P_mean_95", "Func.refGene", "Gene.refGene", "GeneDetail.refGene", "eQTL","TFBS", "epigenetic", "region_start","region_end","credible_start","credible_end", "region_nSNP_total","region_nSNP_imp", "region_nSNP_gen", "AF_1KG.x", "start","end","OR_UC.x","OR_CD.x","p_multi.x","A1.x","A0.x")]
+
+write.table(mdata_to_print, file="huang_nc_snps.tsv", sep="\t", row.names = FALSE)
+#> m <- mdata[mdata$is_lead,]
+#> all(m$position.lead==m$position)
+
+#dim(mdata_to_print[mdata_to_print$P_mean_95 > 0.5,])
+@
+
+For this list we focus on \Sexpr{n_loci} that were fine mapped by Huang et al. 
+The total number of non-coding variants found in their credible sets on this loci is \Sexpr{num_nc}.
+Mean length of "credible loci": \Sexpr{mean(lens)}, median: \Sexpr{median(lens)}.
+
+
+\end{document}
