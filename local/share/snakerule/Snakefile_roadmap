@@ -27,6 +27,7 @@ rule eids:
                     if fields[3] in lookfor:
                         out.write(fields[0]+'\n')
 
+# these are not specific enough and make a big mess
 rule all_peaks:
     input: expand("peaks_{mark}_{look}", mark=WANTED_MARKERS, look=CLASSES)
 
@@ -149,3 +150,26 @@ rule specific_peaks:
         leave_one_out
     output: "{cells}_{mark}.specific.peaks.gz"
     shell: "bedtools intersect -v -a {wildcards.cells}_{wildcards.mark}.merged.gappedPeaks.gz -b <(zcat {input}) | gzip > {output}"
+
+#zcat peaks/H3K4me1_*control*.gz | sort -k1,1 -k2,2n
+
+rule all_control_peaks:
+    input: expand("{mark}_control.all.gz", mark=WANTED_MARKERS)
+
+def get_controls(wildcards):
+    import glob
+    return glob.glob("peaks/{}_control_*.gappedPeak.gz".format(wildcards.mark))
+
+rule control_peaks:
+    input: 
+        get_controls
+    output: "{mark}_control.all.gz"
+    shell: "zcat {input} | sort -k1,1 -k2,2n | gzip > {output}"
+    
+rule all_more_specific:
+    input: expand("{cells}_{mark}.more.specific.peaks.gz", cells=LINES, mark=WANTED_MARKERS)
+
+rule more_specific_peaks:
+    input: "{cells}_{mark}.specific.peaks.gz", "{mark}_control.all.gz"
+    output: "{cells}_{mark}.more.specific.peaks.gz"
+    shell: "bedtools intersect -v -a  {input[0]} -b {input[1]} | gzip > {output}"
