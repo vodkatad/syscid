@@ -35,12 +35,12 @@ rule all_bigwigs:
     input: expand("bigwig_{mark}_wanted", mark=WANTED_MARKERS)
 
 # Snakemake would prefer to store EIDS in variables and no files?
-# Note that it has run two times for the two kind of bigwigs, to rerun remove commented lines.
 rule peaks:
     input: "{look}_eids"
     output: "{kind}_{mark}_{look}"
     run:
         import urllib.request
+        import os.path
         #os.mkdir(wildcard.mark)
         shell('mkdir -p '+wildcards.kind)
         with open(output[0], 'w') as out:
@@ -49,17 +49,18 @@ rule peaks:
                     l = l.rstrip()
                     fields = l.split("\t")
                     eid = fields[0]
-                    try:
-                        if wildcards.kind == "peaks":
-                            url = BASE_URL_CONSOLIDATED_PEAKS+eid+'-'+wildcards.mark+'.gappedPeak.gz'
-                            urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz')
-                        elif wildcards.kind == "bigwig":
-                            #url = BASE_URL_CONSOLIDATED_BW_SIGNAL+eid+'-'+wildcards.mark+'.fc.signal.bigwig'
-                            url2 = BASE_URL_CONSOLIDATED_BW_PVAL+eid+'-'+wildcards.mark+'.pval.signal.bigwig'
-                            #urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.fc.signal.bigwig')
-                            urllib.request.urlretrieve(url2, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.pval.signal.bigwig')
-                    except: # HTTPError:
-                        out.write('missed\t'+wildcards.mark+'_'+wildcards.look+'_'+eid+"\t"+url+'\n')
+                    if not os.path.exists(wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz'):
+                        try:
+                            if wildcards.kind == "peaks":
+                                url = BASE_URL_CONSOLIDATED_PEAKS+eid+'-'+wildcards.mark+'.gappedPeak.gz'
+                                urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz')
+                            elif wildcards.kind == "bigwig":
+                                url = BASE_URL_CONSOLIDATED_BW_SIGNAL+eid+'-'+wildcards.mark+'.fc.signal.bigwig'
+                                url2 = BASE_URL_CONSOLIDATED_BW_PVAL+eid+'-'+wildcards.mark+'.pval.signal.bigwig'
+                                urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.fc.signal.bigwig')
+                                urllib.request.urlretrieve(url2, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.pval.signal.bigwig')
+                        except: # HTTPError:
+                            out.write('missed\t'+wildcards.mark+'_'+wildcards.look+'_'+eid+"\t"+url+'\n')
                 out.write('#placeholder, should rethink this\n') 
                 #https://github.com/leipzig/SandwichesWithSnakemake
 
