@@ -1,0 +1,44 @@
+include: "snakemake"
+
+def leave_one_out(wildcards):
+    import glob
+    import re
+    res = []
+    all_peaks = glob.glob(PEAKS+"/{}_wanted_*.gappedPeak.gz".format(wildcards.mark))
+    this_peak = re.compile(wildcards.eid)
+    for p in all_peaks:
+        if re.search(this_peak, p) is None:
+            res.append(p)
+    return res
+
+rule all_specific:
+    input: expand("{eid}_{mark}.specific.peaks.gz", eid=EIDS, mark=WANTED_MARKERS)
+
+rule specific_peaks:
+    input:
+        leave_one_out
+    output: "{eid}_{mark}.specific.peaks.gz"
+    shell: "bedtools intersect -v -a " + PEAKS +"/{wildcards.mark}_wanted_{wildcards.eid}.gappedPeak.gz -b <(zcat {input}) | gzip > {output}"
+
+#zcat peaks/H3K4me1_*control*.gz | sort -k1,1 -k2,2n
+
+rule all_control_peaks:
+    input: expand("{mark}_control.all.gz", mark=WANTED_MARKERS)
+
+def get_controls(wildcards):
+    import glob
+    return glob.glob(PEAKS+"/{}_control_*.gappedPeak.gz".format(wildcards.mark))
+
+rule control_peaks:
+    input: 
+        get_controls
+    output: "{mark}_control.all.gz"
+    shell: "zcat {input} | sort -k1,1 -k2,2n | gzip > {output}"
+    
+rule all_more_specific:
+    input: expand("{eid}_{mark}.morespecific.peaks.gz", eid=EIDS, mark=WANTED_MARKERS)
+
+rule more_specific_peaks:
+    input: "{eid}_{mark}.specific.peaks.gz", "{mark}_control.all.gz"
+    output: "{eid}_{mark}.morespecific.peaks.gz"
+    shell: "bedtools intersect -v -a  {input[0]} -b {input[1]} | gzip > {output}"
