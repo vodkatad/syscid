@@ -4,6 +4,6 @@ SRC_DIR=PRJ_DIR+"/local/src/"
 PEAKS=PRJ_DIR+"/dataset/roadmap/peaks"
 
 PAIRINGS={'mono': ['E029','E124'], 'th': ['E037','E038','E043'], 'nk': ['E046'], 'reg': ['E044'], 'cytot': ['E047', 'E048'], 'th17': ['E042']}
-EIDS="E029","E037","E038","E042","E043","E044","E046","E047","E048","E124"
+PREFIX="E029","E037","E038","E042","E043","E044","E046","E047","E048","E124"
 LINES='mono','th','nk','reg', 'cytot', 'th17'
 WANTED_MARKERS='H3K27ac', 'H3K4me1'
