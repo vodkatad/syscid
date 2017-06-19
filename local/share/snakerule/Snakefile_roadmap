@@ -49,22 +49,32 @@ rule peaks:
                     l = l.rstrip()
                     fields = l.split("\t")
                     eid = fields[0]
-                    if not os.path.exists(wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz'):
-                        try:
-                            if wildcards.kind == "peaks":
+                    print("going for " + wildcards.kind + " " + wildcards.mark + " " + eid)
+                    try:
+                        if wildcards.kind == "peaks":
+                            if not os.path.exists(wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz'):
                                 url = BASE_URL_CONSOLIDATED_PEAKS+eid+'-'+wildcards.mark+'.gappedPeak.gz'
                                 urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz')
-                            elif wildcards.kind == "bigwig":
-                                url = BASE_URL_CONSOLIDATED_BW_SIGNAL+eid+'-'+wildcards.mark+'.fc.signal.bigwig'
-                                url2 = BASE_URL_CONSOLIDATED_BW_PVAL+eid+'-'+wildcards.mark+'.pval.signal.bigwig'
+                            else:
+                                print("peak already there")
+                        elif wildcards.kind == "bigwig":
+                            url = BASE_URL_CONSOLIDATED_BW_SIGNAL+eid+'-'+wildcards.mark+'.fc.signal.bigwig'
+                            url2 = BASE_URL_CONSOLIDATED_BW_PVAL+eid+'-'+wildcards.mark+'.pval.signal.bigwig'
+                            if not os.path.exists(wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.fc.signal.bigwig'):
                                 urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.fc.signal.bigwig')
+                            else: 
+                                print("bw fc already there")
+                            if not os.path.exists(wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.pval.signal.bigwig'):
                                 urllib.request.urlretrieve(url2, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.pval.signal.bigwig')
-                        except: # HTTPError:
-                            out.write('missed\t'+wildcards.mark+'_'+wildcards.look+'_'+eid+"\t"+url+'\n')
+                            else:
+                                print("bw pval already there")
+                    except: # HTTPError:
+                        out.write('missed\t'+wildcards.mark+'_'+wildcards.look+'_'+eid+"\t"+url+'\n')
                 out.write('#placeholder, should rethink this\n') 
                 #https://github.com/leipzig/SandwichesWithSnakemake
 
 ## needs to check: if peaks_mark_look is not there we should remove peaks dir automatically (or change this rule to have its real output, I'm already metablabbing)
+# manually downloaded the three last H3K4me1 bigwigs cause the python was stuck with connection timed out?
 
 #1 chrom
 #2 chromStart

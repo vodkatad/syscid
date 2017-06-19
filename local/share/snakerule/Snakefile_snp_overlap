@@ -18,3 +18,19 @@ rule overlap:
             bedtools intersect -wa -a snps.tmp -b {input[1]} | bawk '{{print $0,"{wildcards.prefix}","{wildcards.mark}"}}' \
             | translate -a  <(cut -f 1,4 {input[2]}) 5 | gzip > {output} 
             """
+
+rule merged_overlap:
+    input: expand("{prefix}_{{mark}}.overlap.bed.gz", prefix=PREFIX)
+    output: "{mark}.overlap.bed"
+    shell: """
+            rm -f {output}
+            for f in {input}; do zcat $f | cut -f 4,6 >> {output}; done
+           """
+
+rule annotate:
+    input: SNPS, expand("{mark}.overlap.bed", mark=WANTED_MARKERS)
+    output: "overlap.xls"
+    shell:  """
+            sed 1d {input[0]} | filter_1col 5 <(cat {input[1]} {input[2]} | cut -f 1 | sort | uniq) \
+            | translate -v -a -d -j {input[1]} 5 | translate -v -a -d -j {input[2]} 5 | tab2xls > {output}
+            """
