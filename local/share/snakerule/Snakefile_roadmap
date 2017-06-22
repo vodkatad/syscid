@@ -184,3 +184,59 @@ rule more_specific_peaks:
     input: "{cells}_{mark}.specific.peaks.gz", "{mark}_control.all.gz"
     output: "{cells}_{mark}.more.specific.peaks.gz"
     shell: "bedtools intersect -v -a  {input[0]} -b {input[1]} | gzip > {output}"
+
+
+#[egrassi@gncomp3 roadmap]$ grep -f wanted_eids eid_info  > ../../local/share/data/eid_info_colored_manually
+rule session:
+    input: info="../../local/share/data/eid_info_colored_manually", ph1="bigwig_H3K4me1_wanted", ph2="bigwig_H3K27ac_wanted"
+    output: xml= "igv_session.xml"
+    run:
+        from lxml import etree
+        import glob
+        #root = etree.XML("""
+        #<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        #<Session genome="mm10" hasGeneTrack="true" hasSequenceTrack="true" locus="chr18:61103572-61133139">
+        #""")
+        #root = etree.XML("<Session genome=\"mm10\" hasGeneTrack=\"true\" hasSequenceTrack=\"true\" locus=\"chr18:61103572-61133139\">")
+        base_url = "http://gncomp1.ich.techosp.it/tracks/ext/egrassi/roadmap/"
+        root = etree.Element("Session", genome="hg19", locus="chr12:62995535-62998748")
+        tree = etree.ElementTree(root)
+        ress = etree.SubElement(root, "Resources")
+        #height="3680" name="DataPanel" width="1903
+        panel = etree.SubElement(root, "Panel", height="3680", name="DataPanel", width="1903")
+        files = glob.glob("bigwig/*_wanted_*.pval.signal.bigwig")
+        base_paths = [os.path.basename(f) for f in files]
+        eids = [(x.split("_")[2]).split('.')[0] for x in base_paths]
+        wigs = {}
+        print(eids)
+        with open(input.info, 'r') as info:
+            for l in info.readlines():
+                l = l.strip()
+                values = l.split("\t") # eid group color mnemonic name
+                if values[0] in eids:
+                    wigs[values[0]] = (values[2], values[4])
+        def hex_to_rgb(value):
+            """Return '(red, green, blue)' for the color given as #rrggbb. 
+            que viva stackoverflow https://stackoverflow.com/questions/214359/converting-hex-color-to-rgb-and-vice-versa"""
+            value = value.lstrip('#')
+            lv = len(value)
+            return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3)]])
+
+        for eid, info in sorted(wigs.items()):
+            for mark in WANTED_MARKERS:
+                url = base_url+mark+"_wanted_"+eid+".pval.signal.bigwig"
+                name = mark + " in " + info[1]
+                color = hex_to_rgb(info[0])
+                # very stupid to give ligher colors to the second mark, should make ok for every starting color sooner or later
+                # right now I use very dark manually defined colors (those by the roadmap were too similar)
+                if mark == WANTED_MARKERS[1]:
+                    color = [(c+128)%255 for c in color]
+                color = ','.join([str(x) for x in color])
+                etree.SubElement(ress, "Resource", path=url)
+                # panel figlio di session (root), track e datarange figli suoi
+                #<Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" color="128,218,235" displayMode="COLLAPSED" featureVisibilityWindow="-1" fontSize="10" id="http://gncomp1.ich.techosp.it/tracks/tracksDB/SID100273-RID100273-TID24938882172715377-mm10-Elena_Grassi.bigWig" name="TRCN0000096374_Ino80_ut" normalize="false" renderer="BAR_CHART" sortable="true" visible="true" windowFunction="mean">
+                #<DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="104.769554" minimum="0.0" type="LINEAR"/>
+                track = etree.SubElement(panel, "Track", color=color, displayMode="COLLAPSED", id=url, name=name, renderer="BAR_CHART", showDataRange="true", visible="true", windowFunction="mean", normalize="false", featureVisibilityWindow="-1", autoScale="false")
+                #etree.SubElement(track, "DataRange", baseline="0.0", drawBaseline="true", flipAxis="false", maximum="100", minimum="0.0", type="LINEAR")    
+        tree.write(output.xml, pretty_print=True)
+
