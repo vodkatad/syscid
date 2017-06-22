@@ -220,8 +220,7 @@ rule session:
             que viva stackoverflow https://stackoverflow.com/questions/214359/converting-hex-color-to-rgb-and-vice-versa"""
             value = value.lstrip('#')
             lv = len(value)
-            return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3)]])
-
+            return [int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3)]
         for eid, info in sorted(wigs.items()):
             for mark in WANTED_MARKERS:
                 url = base_url+mark+"_wanted_"+eid+".pval.signal.bigwig"
@@ -230,7 +229,9 @@ rule session:
                 # very stupid to give ligher colors to the second mark, should make ok for every starting color sooner or later
                 # right now I use very dark manually defined colors (those by the roadmap were too similar)
                 if mark == WANTED_MARKERS[1]:
-                    color = [(c+128)%255 for c in color]
+                    for i in range(0, len(color)):
+                        if color[i] == 0:
+                            color[i] = 77
                 color = ','.join([str(x) for x in color])
                 etree.SubElement(ress, "Resource", path=url)
                 # panel figlio di session (root), track e datarange figli suoi
