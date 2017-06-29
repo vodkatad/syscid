@@ -1,0 +1,6 @@
+./roadmap/Snakefile	../../local/share/snakerule/Snakefile_roadmap
+./roadmap/snakemake	../../local/share/snakemake/snakemake_roadmap
+./roadmap/all_single/Snakefile	../../../local/share/snakerule/Snakefile_roadmap_all_single
+./roadmap/all_single/snakemake	../../../local/share/snakemake/snakemake_roadmap_all_single
+./huang_roadmap_overlap/Snakefile	../../local/share/snakerule/Snakefile_snp_overlap
+./huang_roadmap_overlap/snakemake	../../local/share/snakemake/snakemake_huang_roadmap_overlap
