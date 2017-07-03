@@ -1,7 +1,7 @@
 
 pwm_db <- snakemake@params[["db"]]
 snp_bed <- snakemake@input[["snp_bed"]]
-outfile <- snakemake@output[["out"]]
+outfile <- gzfile(snakemake@output[["out"]], open="w")
 logfile <- file(snakemake@log[["logfile"]], open="w")
 sink(logfile, type="message")
 sink(logfile, type="output") 
@@ -31,3 +31,4 @@ df <- as.data.frame(results, row.names=NULL)
 
 dfres <- data.frame(snpid=names(results), gene=df$geneSymbol, db=df$dataSource, name=df$providerName, id=df$providerId, scoreRef=df$pctRef, scoreAlt=df$pctAlt, effect=df$effect)
 write.table(dfres, file=outfile, sep="\t", quote=FALSE, col.names=TRUE, row.names=FALSE)
+close(outfile)
