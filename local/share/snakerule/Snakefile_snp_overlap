@@ -69,7 +69,7 @@ rule motifbreakr_bed:
     input: SNPS
     output: "motifbreakr.bed"
     shell:  """
-            sed 1d {input[0]} | cut -f 3,5,6,28,29 | bawk '{{print "chr"$1,$3-1,$3-1+length($5),"chr"$1":"$3-1":"$5":"$4,0,"+"}}' | sort -k1,1 -k2,2n | uniq > {output}
+            sed 1d {input[0]} | cut -f 3,5,6,28,29 | bawk 'length($5) == 1 && $4 ~ /[ACGT]/ {{print "chr"$1,$3-1,$3-1+length($5),"chr"$1":"$3-1":"$5":"$4,0,"+"}}' | sort -k1,1 -k2,2n | uniq > {output}
             """
 rule all_motifbreark:
     input: "all.motifbr", "hocomoco.motifbr"
@@ -83,8 +83,28 @@ rule all_motifbreark:
 # Since I'm stupid and 2 clearly does not work I'll use n.1 right now :(
 rule motifbreakr:
     input: snp_bed="motifbreakr.bed"
-    output: out="{pwmdb}.motifbr"
+    output: out="{pwmdb}.motifbr.gz"
     params: db="{pwmdb}", conda="motifbreakr"
     log: logfile="{pwmdb}.motifbr.log"
     script: SRC_DIR+"/motifbreakR.R"
 
+
+# snpid   gene    db      name    id      scoreRef        scoreAlt        effect
+rule crosstab_motifbr:
+    input: "hocomoco.motifbr.gz"
+    output: "hocomoco.matrix"
+    run: 
+         import pandas
+         data = pandas.read_csv(input[0], sep="\t", compression='gzip')
+         #data.groupby(['snpid'])['gene'].agg({'n': 'nunique', 'gene': ','.join}) # deprecated
+         data = data.groupby(['snpid'])['gene'].agg(['nunique', ','.join]).rename(columns={'nunique': 'n_dTF', 'join':'gene'})
+         data.to_csv(output[0], sep='\t', index=True)
+
+rule annotate_motif:
+    input: SNPS, "overlap.matrix", "hocomoco.matrix"
+    output: "overlap.xls"
+    shell:  """
+            head -n 1 {input[1]} > {output}.header
+            sed 1d {input[0]} | filter_1col 5 <(cat {input[1]} | cut -f 1 | sort | uniq) \
+            | translate -v -a -d -j {input[1]} 5 > {output}.withov
+            """
