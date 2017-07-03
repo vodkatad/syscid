@@ -80,7 +80,7 @@ rule all_motifbreark:
 # 2- use system inside R and a param
 # 3- understand how to call source activate before the script: directive (or use dummy pre/post rules, do cascades of rules work in activated environments?)
 # 4- call a script with getopt and use shell: instead of script:
-# Since I'm lazy and late and the R source is linked with the environment will go with 2 right now.
+# Since I'm stupid and 2 clearly does not work I'll use n.1 right now :(
 rule motifbreakr:
     input: snp_bed="motifbreakr.bed"
     output: out="{pwmdb}.motifbr"
