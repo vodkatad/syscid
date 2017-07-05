@@ -72,7 +72,7 @@ rule motifbreakr_bed:
             sed 1d {input[0]} | cut -f 3,5,6,28,29 | bawk 'length($5) == 1 && $4 ~ /[ACGT]/ {{print "chr"$1,$3-1,$3-1+length($5),"chr"$1":"$3-1":"$5":"$4,0,"+"}}' | sort -k1,1 -k2,2n | uniq > {output}
             """
 rule all_motifbreark:
-    input: "all.motifbr", "hocomoco.motifbr"
+    input: "all.motifbr.gz", "hocomoco.motifbr.gz"
 
 # I have three options for the conda environment (I had to get an old gls from an ad hoc channel: https://github.com/kundajelab/atac_dnase_pipelines/issues/30
 # to install motifbreakR):
@@ -88,6 +88,22 @@ rule motifbreakr:
     log: logfile="{pwmdb}.motifbr.log"
     script: SRC_DIR+"/motifbreakR.R"
 
+ruleorder: weak_strong_noNA > motifbreakr
+# to deal with:
+#(motifbreakr) [egrassi@gncomp3 huang_roadmap_overlap]$ snakemake -np overlap_all_divided.xls
+#AmbiguousRuleException:
+#Rules weak_strong_noNA and motifbreakr are ambiguous for the file allweak.motifbr.gz.
+#Expected input files:
+#        weak_strong_noNA: all.motifbr.gz
+#        motifbreakr: motifbreakr.bed
+
+rule weak_strong_noNA:
+    input: "{pwmdb}.motifbr.gz_bck"
+    output: create="{pwmdb}.create.motifbr.gz", destroy="{pwmdb}.destroy.motifbr.gz"
+    shell: """
+           zcat {input} | bawk 'function abs(x){{return (((x < 0.0) ? -x : x) + 0.0)}} {{print $0,abs($6-$7), $7-$6}}' \\
+           | tee >(bawk '($2!="NA" && $8=="strong" && $10>0.3) || NR==1' | cut -f 1,2 | sort | uniq | gzip > {output.create}) |  bawk '($2!="NA" && $8=="strong" && $10<-0.3) || NR==1' | cut -f 1,2 | sort | uniq | gzip > {output.destroy}
+           """
 
 # snpid   gene    db      name    id      scoreRef        scoreAlt        effect
 rule crosstab_motifbr:
@@ -95,13 +111,13 @@ rule crosstab_motifbr:
     output: "{pwmdb}.matrix"
     run: 
          import pandas
-         data = pandas.read_csv(input[0], sep="\t", compression='gzip')
+         data = pandas.read_csv(input[0], sep="\t", compression='gzip', header=None, names=['snpid','gene'])
          #data.groupby(['snpid'])['gene'].agg({'n': 'nunique', 'gene': ','.join}) # deprecated
          data = data.groupby(['snpid'])['gene'].agg(['nunique', ','.join]).rename(columns={'nunique': 'n_dTF', 'join':'gene'})
          data.to_csv(output[0], sep='\t', index=True)
 
 #3,5,6,28,29
-# The right excel header as to be put together by hand right now.
+# The right excel header has to be put together by hand right now.
 rule annotate_motif:
     input: SNPS, "overlap.matrix", "{pwmdb}.matrix"
     output: "overlap_{pwmdb}.xls"
@@ -109,6 +125,17 @@ rule annotate_motif:
             head -n 1 {input[1]} > {output}.header
             sed 1d {input[0]} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input[1]} | cut -f 1 | sort | uniq) \
             | translate -a -d -j {input[1]} 6 | translate -a -v -e "\t" -d -j {input[2]} 1 > {output}.body
+            cat {output}.header {output}.body | tab2xls > {output}
+            rm {output}.header {output}.body
+            """
+
+rule annotate_motif_divided:
+    input: SNPS, "overlap.matrix", "{pwmdb}.create.matrix", "{pwmdb}.destroy.matrix"
+    output: "divided_overlap_{pwmdb}.xls"
+    shell:  """
+            head -n 1 {input[1]} > {output}.header
+            sed 1d {input[0]} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input[1]} | cut -f 1 | sort | uniq) \
+            | translate -a -d -j {input[1]} 6 | translate -a -v -e "\t" -d -j {input[2]} 1 | translate -a -v -e "\t" -d -j {input[3]} 1 > {output}.body
             cat {output}.header {output}.body | tab2xls > {output}
             rm {output}.header {output}.body
             """
