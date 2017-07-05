@@ -21,7 +21,8 @@ if (pwm_db == "all") {
     db <-  eval(as.symbol(pwm_db))
 }
 
-results <- motifbreakR(snpList = snps, threshold=0.85, pwmList = db, method = "default", bkg = c(A=0.25, C=0.25, G=0.25, T=0.25))
+results <- motifbreakR(snpList = snps, threshold=4e-8, pwmList = db, method = "default", bkg = c(A=0.25, C=0.25, G=0.25, T=0.25), filterp=TRUE)
+#results <- motifbreakR(snpList = snps, threshold=0.85, pwmList = db, method = "default", bkg = c(A=0.25, C=0.25, G=0.25, T=0.25))
 df <- as.data.frame(results, row.names=NULL)
 #df$snps <- names(results) # checked in the source code with  getMethod(as.data.frame,  "GenomicRanges"), the order is maintained
 #> colnames(df)
@@ -29,6 +30,6 @@ df <- as.data.frame(results, row.names=NULL)
 #[10] "geneSymbol"   "dataSource"   "providerName" "providerId"   "seqMatch"     "pctRef"       "pctAlt"       "alleleRef"    "alleleAlt"   
 #[19] "effect"       "sns"  
 
-dfres <- data.frame(snpid=names(results), gene=df$geneSymbol, db=df$dataSource, name=df$providerName, id=df$providerId, scoreRef=df$pctRef, scoreAlt=df$pctAlt, effect=df$effect)
+dfres <- data.frame(snpid=names(results), gene=df$geneSymbol, db=df$dataSource, name=df$providerName, id=df$providerId, scoreRef=df$pctRef, scoreAlt=df$pctAlt, effect=df$effect, seqMatch=df$seqMatch, motifPos= df$motifPos)
 write.table(dfres, file=outfile, sep="\t", quote=FALSE, col.names=TRUE, row.names=FALSE)
 close(outfile)
