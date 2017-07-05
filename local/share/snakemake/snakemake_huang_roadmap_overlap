@@ -6,7 +6,7 @@ SNPS=PRJ_DIR+"/local/share/data/huang_nc_snps.tsv"
 PEAKS_DIR=PRJ_DIR+"/dataset/roadmap/peaks"
 
 WANTED_MARKERS='H3K27ac', 'H3K4me1'
-PREFIX="E029","E037","E038","E042","E043","E044","E046","E047","E048","E124"
+PREFIX="E029","E037","E038","E042","E043","E044","E046","E047","E048","E124","E050"
 PREFIX_ANNOT=PRJ_DIR+"/dataset/roadmap/eid_info"
 KIND=".gappedPeak"
 #[egrassi@gncomp3 all_single]$ ls  -1 *specific.peaks.gz |  tr "\n" "," | sed 's/,/","/g'

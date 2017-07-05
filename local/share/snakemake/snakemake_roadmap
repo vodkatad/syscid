@@ -3,7 +3,7 @@ SRC_DIR=PRJ_DIR+"/local/src/"
 # EIDs metadata, specifically cell types
 EID_META='http://egg2.wustl.edu/roadmap/data/byFileType/metadata/EID_metadata.tab'
 
-WANTED='BLD.CD4.CD25.CD127M.TREGPC', 'BLD.CD14.PC', 'BLD.CD14.MONO','BLD.CD56.PC','BLD.CD4.MPC','BLD.CD4.NPC','BLD.CD4.CD25M.TPC','BLD.CD4.CD25M.IL17P.PL.TPC','BLD.CD8.NPC','BLD.CD8.MPC'
+WANTED='BLD.CD4.CD25.CD127M.TREGPC', 'BLD.CD14.PC', 'BLD.CD14.MONO','BLD.CD56.PC','BLD.CD4.MPC','BLD.CD4.NPC','BLD.CD4.CD25M.TPC','BLD.CD4.CD25M.IL17P.PL.TPC','BLD.CD8.NPC','BLD.CD8.MPC', 'BLD.MOB.CD34.PC.F'
 # BLD.CD4.CD25M.IL17P.PL.TPC      Primary T helper 17 cells PMA-I stimulated 
 # treg, cd14 roadmap, cd14 encode, nk, t helper memory, t helper naive
 # BLD.CD14.MONO is from encode, TCP is both naive and memory, NPC only naive (MPC for memory)
