@@ -98,11 +98,11 @@ ruleorder: weak_strong_noNA > motifbreakr
 #        motifbreakr: motifbreakr.bed
 
 rule weak_strong_noNA:
-    input: "{pwmdb}.motifbr.gz_bck"
+    input: "{pwmdb}.motifbr.gz"
     output: create="{pwmdb}.create.motifbr.gz", destroy="{pwmdb}.destroy.motifbr.gz"
     shell: """
            zcat {input} | bawk 'function abs(x){{return (((x < 0.0) ? -x : x) + 0.0)}} {{print $0,abs($6-$7), $7-$6}}' \\
-           | tee >(bawk '($2!="NA" && $8=="strong" && $10>0.3) || NR==1' | cut -f 1,2 | sort | uniq | gzip > {output.create}) |  bawk '($2!="NA" && $8=="strong" && $10<-0.3) || NR==1' | cut -f 1,2 | sort | uniq | gzip > {output.destroy}
+           | tee >(bawk '($2!="NA" && $8=="strong" && $12>0.2)' | cut -f 1,2 | sort | uniq | gzip > {output.create}) |  bawk '($2!="NA" && $8=="strong" && $12<-0.2)' | cut -f 1,2 | sort | uniq | gzip > {output.destroy}
            """
 
 # snpid   gene    db      name    id      scoreRef        scoreAlt        effect
@@ -130,12 +130,13 @@ rule annotate_motif:
             """
 
 rule annotate_motif_divided:
-    input: SNPS, "overlap.matrix", "{pwmdb}.create.matrix", "{pwmdb}.destroy.matrix"
+    input: SNPS, "overlap.matrix", "{pwmdb}.create.matrix", "{pwmdb}.destroy.matrix", LEAD
     output: "divided_overlap_{pwmdb}.xls"
     shell:  """
             head -n 1 {input[1]} > {output}.header
             sed 1d {input[0]} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input[1]} | cut -f 1 | sort | uniq) \
-            | translate -a -d -j {input[1]} 6 | translate -a -v -e "\t" -d -j {input[2]} 1 | translate -a -v -e "\t" -d -j {input[3]} 1 > {output}.body
+            | translate -a -d -j {input[1]} 6 | translate -a -v -e "\t" -d -j {input[2]} 1 | translate -a -v -e "\t" -d -j {input[3]} 1 \
+            | translate -a -v -e "" <(bawk '{{print $1,"lead"}}' < {input[4]}) 10 > {output}.body
             cat {output}.header {output}.body | tab2xls > {output}
-            rm {output}.header {output}.body
+            rm {output}.header
             """

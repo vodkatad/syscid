@@ -21,7 +21,7 @@ if (pwm_db == "all") {
     db <-  eval(as.symbol(pwm_db))
 }
 
-results <- motifbreakR(snpList = snps, threshold=4e-8, pwmList = db, method = "default", bkg = c(A=0.25, C=0.25, G=0.25, T=0.25), filterp=TRUE)
+results <- motifbreakR(snpList = snps, threshold=0.9, pwmList = db, method = "default", bkg = c(A=0.25, C=0.25, G=0.25, T=0.25))
 #results <- motifbreakR(snpList = snps, threshold=0.85, pwmList = db, method = "default", bkg = c(A=0.25, C=0.25, G=0.25, T=0.25))
 df <- as.data.frame(results, row.names=NULL)
 #df$snps <- names(results) # checked in the source code with  getMethod(as.data.frame,  "GenomicRanges"), the order is maintained
