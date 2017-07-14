@@ -32,11 +32,48 @@ rule bed:
             bawk -vl=$L '{{print $1,$2-l,$3+l,$4}}' <  {input.snps} > {output}
            """
 
-# do they overlap?
+# do they overlap? Yes:
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ bedtools merge -d 1 -c 4 -o collapse -i snps.bed | wc -l
+# 3814
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ wc -l snps.bed 
+# 4083 snps.bed
+#
+# but leading snps not, so right now I work only on them without managing the overlap
+#
+#
+rule lead_bed:
+    input: bed="snps.bed", lead=LEAD
+    output: "snps.lead.bed"
+    shell:
+        """ filter_1col 4 {input.lead} < {input.bed} > {output}
+            N1=`cat {output} | wc -l`; \\
+            N2=`bedtools merge -d 1 -c 4 -o collapse -i {output} | wc -l`; \\
+            if [ $N1 -ne $N2 ]; then \\
+                echo "BAAH! Some lead snps overlap!"; \\
+                rm {output}; \\
+            fi
+        """
 
 ### L=longest matrix, get around SNP bondaries +-L
 
 ### produce ad hoc files (results of deconvolve vcf) where allele1 is always ref and allele2 is always alt
+#
+## alleles files
+#.META: %/significant_variants_ncs_pruned_alleles
+#        1       snpid   snp_1_9908269
+#        2       id      137576
+#        3       chr     1
+#        4       coord   9908269
+#        5       REF     C
+#        6       ALT     T
+#
+## samples alleles files
+#.META: %/significant_variants_ncs_pruned_samples_alleles
+#        1       id      137576
+#        2       sample  sample
+#        3       allele1 C
+#        4       allele2 T
+
 
 ### get_sequences
 
