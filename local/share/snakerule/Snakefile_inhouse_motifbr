@@ -1,0 +1,84 @@
+include: "conf.sk"
+
+### distance between SNPs?
+#[egrassi@gncomp3 all_single]$ head -n 1 ../../../local/share/data/huang_nc_snps.tsv   | tr "\t" "\n" | grep -n chr
+#3:chr.x
+#[egrassi@gncomp3 all_single]$ head -n 1 ../../../local/share/data/huang_nc_snps.tsv   | tr "\t" "\n" | grep -n position
+#6:position
+#[egrassi@gncomp3 all_single]$ head -n 1 ../../../local/share/data/huang_nc_snps.tsv   | tr "\t" "\n" | grep -n variant
+#5:variant
+#
+## we sum the length of the reference allele to have enough sequence when there are dels (we get around the snp +- the longest pwm)
+## for ins there aren't problems.
+rule snps:
+    input: SNPS
+    output: "snps_info"
+    shell:  """
+            sed 1d {input[0]} | cut -f 3,5,6,28,29 | bawk '{{print "chr"$1,$3-1,$3-1+length($5),$2,$5,$4}}' | sort -k1,1 -k2,2n | uniq > {output}
+            """
+
+rule longest_pwm:
+    input: PWM_CONS
+    output: "halfmaxlen"
+    shell: """
+            bawk '{{print int(length($2)/2)}}' < {input} | sort -n | tail -n 1 > {output}
+           """
+
+rule bed:
+    input: snps="snps_info", halfmaxlen="halfmaxlen"
+    output: "snps.bed"
+    shell: """
+            L=`cat {input.halfmaxlen}`; \\
+            bawk -vl=$L '{{print $1,$2-l,$3+l,$4}}' <  {input.snps} > {output}
+           """
+
+# do they overlap?
+
+### L=longest matrix, get around SNP bondaries +-L
+
+### produce ad hoc files (results of deconvolve vcf) where allele1 is always ref and allele2 is always alt
+
+### get_sequences
+
+### score with fimo (no bg?)
+
+### select SNPs with != scores, at least one 'allele' over a given threshold
+
+### threshold on score differences?
+
+#####################################
+# snpid   gene    db      name    id      scoreRef        scoreAlt        effect
+rule crosstab_motifbr:
+    input: "{pwmdb}.motifbr.gz"
+    output: "{pwmdb}.matrix"
+    run: 
+         import pandas
+         data = pandas.read_csv(input[0], sep="\t", compression='gzip', header=None, names=['snpid','gene'])
+         #data.groupby(['snpid'])['gene'].agg({'n': 'nunique', 'gene': ','.join}) # deprecated
+         data = data.groupby(['snpid'])['gene'].agg(['nunique', ','.join]).rename(columns={'nunique': 'n_dTF', 'join':'gene'})
+         data.to_csv(output[0], sep='\t', index=True)
+
+#3,5,6,28,29
+# The right excel header has to be put together by hand right now.
+rule annotate_motif:
+    input: SNPS, "overlap.matrix", "{pwmdb}.matrix"
+    output: "overlap_{pwmdb}.xls"
+    shell:  """
+            head -n 1 {input[1]} > {output}.header
+            sed 1d {input[0]} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input[1]} | cut -f 1 | sort | uniq) \
+            | translate -a -d -j {input[1]} 6 | translate -a -v -e "\t" -d -j {input[2]} 1 > {output}.body
+            cat {output}.header {output}.body | tab2xls > {output}
+            rm {output}.header {output}.body
+            """
+
+rule annotate_motif_divided:
+    input: SNPS, "overlap.matrix", "{pwmdb}.create.matrix", "{pwmdb}.destroy.matrix", LEAD
+    output: "divided_overlap_{pwmdb}.xls"
+    shell:  """
+            head -n 1 {input[1]} > {output}.header
+            sed 1d {input[0]} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input[1]} | cut -f 1 | sort | uniq) \
+            | translate -a -d -j {input[1]} 6 | translate -a -v -e "\t" -d -j {input[2]} 1 | translate -a -v -e "\t" -d -j {input[3]} 1 \
+            | translate -a -v -e "" <(bawk '{{print $1,"lead"}}' < {input[4]}) 10 > {output}.body
+            cat {output}.header {output}.body | tab2xls > {output}
+            rm {output}.header
+            """

@@ -1,0 +1,8 @@
+PRJ_DIR='/data/egrassi/snaketree/prj/syscid'
+SRC_DIR=PRJ_DIR+"/local/src/"
+
+SNPS=PRJ_DIR+"/local/share/data/huang_nc_snps.tsv"
+LEAD=PRJ_DIR+'/local/share/data/nc_leads'
+
+PWM_CONS=PRJ_DIR+"/local/share/data/PWMs20170320/PWMs/20170320_pwms_selected.consensus"
+PWM_MEME=PRJ_DIR+"/local/share/data/PWMs20170320/PWMs/20170320_pwms_selected.meme"
