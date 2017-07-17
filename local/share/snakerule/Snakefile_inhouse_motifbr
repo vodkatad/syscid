@@ -56,6 +56,16 @@ rule lead_bed:
 
 ### L=longest matrix, get around SNP bondaries +-L
 
+## needs to be done foreach chr!! XXX TODO
+rule get_sequences_input:
+    input: info="snps_info", lead=LEAD
+    output: samples="{chr}.snps_lead.samples", alleles="{chr}.snps_lead.alleles"
+    shell: """
+            filter_1col 4 {input.lead} < {input.info} | bawk '$1=="{wildcards.chr}"' | sort -k1,1 -k2,2n > {output.samples}.tmp
+            bawk '{{print $4,NR,$1,$2,$5,$6}}' {output.samples}.tmp > {output.alleles}
+            bawk '{{print NR,"het",$5,$6}}' {output.samples}.tmp > {output.samples}
+            rm {output.samples}.tmp
+           """
 ### produce ad hoc files (results of deconvolve vcf) where allele1 is always ref and allele2 is always alt
 #
 ## alleles files
@@ -74,6 +84,16 @@ rule lead_bed:
 #        3       allele1 C
 #        4       allele2 T
 
+rule all_get_sequences:
+    input: expand("{chrom}.snps_lead.fa", chrom=CHRS)
+
+rule get_sequences:
+    input: samples="{chr}.snps_lead.samples", alleles="{chr}.snps_lead.alleles", bed="snps.lead.bed"
+    params: seq_dir=SEQ_DIR, get_genomes=BIN_DIR+"/get_genomes_from_bed"
+    output: "{chr}.snps_lead.fa"
+    shell: """
+           sort -k2,2 -k1,1n {input.samples} | {params.get_genomes} {input.alleles} {params.seq_dir} <(sort -k1,1 -k2,2n {input.bed} | bawk '$1=="{wildcards.chr}"') > {output}
+           """
 
 ### get_sequences
 
