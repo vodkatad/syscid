@@ -56,7 +56,7 @@ rule lead_bed:
 
 ### L=longest matrix, get around SNP bondaries +-L
 
-## needs to be done foreach chr!! XXX TODO
+### produce ad hoc files (results of deconvolve vcf) where allele1 is always ref and allele2 is always alt
 rule get_sequences_input:
     input: info="snps_info", lead=LEAD
     output: samples="{chr}.snps_lead.samples", alleles="{chr}.snps_lead.alleles"
@@ -66,7 +66,6 @@ rule get_sequences_input:
             bawk '{{print NR,"het",$5,$6}}' {output.samples}.tmp > {output.samples}
             rm {output.samples}.tmp
            """
-### produce ad hoc files (results of deconvolve vcf) where allele1 is always ref and allele2 is always alt
 #
 ## alleles files
 #.META: %/significant_variants_ncs_pruned_alleles
@@ -84,8 +83,11 @@ rule get_sequences_input:
 #        3       allele1 C
 #        4       allele2 T
 
+### get_sequences
 rule all_get_sequences:
     input: expand("{chrom}.snps_lead.fa", chrom=CHRS)
+    output: "all.snps_lead.fa"
+    shell: "cat {input} > {output}"
 
 rule get_sequences:
     input: samples="{chr}.snps_lead.samples", alleles="{chr}.snps_lead.alleles", bed="snps.lead.bed"
@@ -95,12 +97,17 @@ rule get_sequences:
            sort -k2,2 -k1,1n {input.samples} | {params.get_genomes} {input.alleles} {params.seq_dir} <(sort -k1,1 -k2,2n {input.bed} | bawk '$1=="{wildcards.chr}"') > {output}
            """
 
-### get_sequences
-
 ### score with fimo (no bg?)
+#fimo --oc $(FIMO_DIR_REF) --norc  --thresh 1 $< $^2
+rule run_fimo:
+    input: "all.snps_lead.fa"
+    output: "lead/fimo.txt"
+    log: "lead/fimo.log"
+    params: pwm=PWM_MEME, fimo=BIN_DIR+"/fimo"
+    shell: "mkdir -p lead; {params.fimo} --oc lead --thresh 1 {params.pwm} {input} 2> {log}"
 
 ### select SNPs with != scores, at least one 'allele' over a given threshold
-
+    
 ### threshold on score differences?
 
 #####################################
