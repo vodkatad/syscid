@@ -2,7 +2,14 @@ PRJ_DIR='/data/egrassi/snaketree/prj/syscid'
 SRC_DIR=PRJ_DIR+"/local/src/"
 BIN_DIR=PRJ_DIR+"/local/bin/"
 
-SNPS=PRJ_DIR+"/local/share/data/huang_nc_snps.tsv"
+SNPS=PRJ_DIR+"/local/share/data/huang_nc_snps_manual.tsv"
+# this has two snps alleles manually fixed:
+#>het;allele2;rs398097167;chr10;101288101;101288134;rs398097167-
+#TAGCAACAACAAAAAIAGTTAAGGAATGCATTC
+#--
+#>het;allele1;rs796819847;chr6;20640407;20640440;rs796819847-
+#CTCAAAACATGCTTTITGGGTTCAAGACAATCA
+
 LEAD=PRJ_DIR+'/local/share/data/nc_leads'
 
 PWM_CONS=PRJ_DIR+"/local/share/data/PWMs20170320/PWMs/20170320_pwms_selected.consensus"
