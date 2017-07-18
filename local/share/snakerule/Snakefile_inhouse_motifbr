@@ -89,7 +89,7 @@ rule get_sequences_input:
 rule all_get_sequences:
     input: expand("{chrom}.snps_lead.fa", chrom=CHRS)
     output: "all.snps_lead.fa"
-    shell: "cat {input} > {output}"
+    shell: "cat {input} | perl -pane 'if ($_ !~ /^>/) {{ $_ = uc($_); }}' > {output}"
 
 rule get_sequences:
     input: samples="{chr}.snps_lead.samples", alleles="{chr}.snps_lead.alleles", bed="snps.lead.bed"
