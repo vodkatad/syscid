@@ -57,7 +57,7 @@ rule peaks:
                                 urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.gappedPeak.gz')
                             else:
                                 print("peak already there")
-                        elif wildcards.kind == "bigwig":
+                        elif wildcards.kind == "bigwig" and wildcards.mark != "DNase":
                             url = BASE_URL_CONSOLIDATED_BW_SIGNAL+eid+'-'+wildcards.mark+'.fc.signal.bigwig'
                             url2 = BASE_URL_CONSOLIDATED_BW_PVAL+eid+'-'+wildcards.mark+'.pval.signal.bigwig'
                             if not os.path.exists(wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.fc.signal.bigwig'):
@@ -68,6 +68,12 @@ rule peaks:
                                 urllib.request.urlretrieve(url2, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.pval.signal.bigwig')
                             else:
                                 print("bw pval already there")
+                        elif wildcards.mark == "DNase":
+                            if not os.path.exists(wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.pval.signal.bigwig'):
+                                url = BASE_URL_CONSOLIDATED_DNASE+eid+'-'+wildcards.mark+'.pval.signal.bigwig'
+                                urllib.request.urlretrieve(url, wildcards.kind+'/'+wildcards.mark+'_'+wildcards.look+'_'+eid+'.pval.signal.bigwig')
+                            else:
+                                print("dnase peak already there")
                     except: # HTTPError:
                         out.write('missed\t'+wildcards.mark+'_'+wildcards.look+'_'+eid+"\t"+url+'\n')
                 out.write('#placeholder, should rethink this\n') 
@@ -193,6 +199,7 @@ rule session:
     run:
         from lxml import etree
         import glob
+        import os.path
         #root = etree.XML("""
         #<?xml version="1.0" encoding="UTF-8" standalone="no"?>
         #<Session genome="mm10" hasGeneTrack="true" hasSequenceTrack="true" locus="chr18:61103572-61133139">
@@ -223,21 +230,26 @@ rule session:
             return [int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3)]
         for eid, info in sorted(wigs.items()):
             for mark in WANTED_MARKERS:
-                url = base_url+mark+"_wanted_"+eid+".pval.signal.bigwig"
-                name = mark + " in " + info[1]
-                color = hex_to_rgb(info[0])
-                # very stupid to give ligher colors to the second mark, should make ok for every starting color sooner or later
-                # right now I use very dark manually defined colors (those by the roadmap were too similar)
-                if mark == WANTED_MARKERS[1]:
-                    for i in range(0, len(color)):
-                        if color[i] == 0:
-                            color[i] = 77
-                color = ','.join([str(x) for x in color])
-                etree.SubElement(ress, "Resource", path=url)
-                # panel figlio di session (root), track e datarange figli suoi
-                #<Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" color="128,218,235" displayMode="COLLAPSED" featureVisibilityWindow="-1" fontSize="10" id="http://gncomp1.ich.techosp.it/tracks/tracksDB/SID100273-RID100273-TID24938882172715377-mm10-Elena_Grassi.bigWig" name="TRCN0000096374_Ino80_ut" normalize="false" renderer="BAR_CHART" sortable="true" visible="true" windowFunction="mean">
-                #<DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="104.769554" minimum="0.0" type="LINEAR"/>
-                track = etree.SubElement(panel, "Track", color=color, displayMode="COLLAPSED", id=url, name=name, renderer="BAR_CHART", showDataRange="true", visible="true", windowFunction="mean", normalize="false", featureVisibilityWindow="-1", autoScale="false")
-                #etree.SubElement(track, "DataRange", baseline="0.0", drawBaseline="true", flipAxis="false", maximum="100", minimum="0.0", type="LINEAR")    
+                if os.path.exists('bigwig/'+mark+'_wanted_'+eid+'.pval.signal.bigwig'): # cause some DNAse are missing
+                    url = base_url+mark+"_wanted_"+eid+".pval.signal.bigwig"
+                    name = mark + " in " + info[1]
+                    color = hex_to_rgb(info[0])
+                    # very stupid to give ligher colors to the second mark, should make ok for every starting color sooner or later
+                    # right now I use very dark manually defined colors (those by the roadmap were too similar)
+                    if mark == WANTED_MARKERS[1]:
+                        for i in range(0, len(color)):
+                            if color[i] == 0:
+                                color[i] = 77
+                    elif mark == WANTED_MARKERS[2]:
+                        for i in range(0, len(color)):
+                            if color[i] == 0:
+                                color[i] = 153
+                    color = ','.join([str(x) for x in color])
+                    etree.SubElement(ress, "Resource", path=url)
+                    # panel figlio di session (root), track e datarange figli suoi
+                    #<Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" color="128,218,235" displayMode="COLLAPSED" featureVisibilityWindow="-1" fontSize="10" id="http://gncomp1.ich.techosp.it/tracks/tracksDB/SID100273-RID100273-TID24938882172715377-mm10-Elena_Grassi.bigWig" name="TRCN0000096374_Ino80_ut" normalize="false" renderer="BAR_CHART" sortable="true" visible="true" windowFunction="mean">
+                    #<DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="104.769554" minimum="0.0" type="LINEAR"/>
+                    track = etree.SubElement(panel, "Track", color=color, displayMode="COLLAPSED", id=url, name=name, renderer="BAR_CHART", showDataRange="true", visible="true", windowFunction="mean", normalize="false", featureVisibilityWindow="-1", autoScale="false")
+                    #etree.SubElement(track, "DataRange", baseline="0.0", drawBaseline="true", flipAxis="false", maximum="100", minimum="0.0", type="LINEAR")    
         tree.write(output.xml, pretty_print=True)
 

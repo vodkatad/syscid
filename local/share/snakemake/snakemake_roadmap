@@ -3,7 +3,7 @@ SRC_DIR=PRJ_DIR+"/local/src/"
 # EIDs metadata, specifically cell types
 EID_META='http://egg2.wustl.edu/roadmap/data/byFileType/metadata/EID_metadata.tab'
 
-WANTED='BLD.CD4.CD25.CD127M.TREGPC', 'BLD.CD14.PC', 'BLD.CD14.MONO','BLD.CD56.PC','BLD.CD4.MPC','BLD.CD4.NPC','BLD.CD4.CD25M.TPC','BLD.CD4.CD25M.IL17P.PL.TPC','BLD.CD8.NPC','BLD.CD8.MPC', 'BLD.MOB.CD34.PC.F'
+WANTED='BLD.CD4.CD25.CD127M.TREGPC', 'BLD.CD14.PC', 'BLD.CD14.MONO','BLD.CD56.PC','BLD.CD4.MPC','BLD.CD4.NPC','BLD.CD4.CD25M.TPC','BLD.CD4.CD25M.IL17P.PL.TPC','BLD.CD8.NPC','BLD.CD8.MPC', 'BLD.MOB.CD34.PC.F','GI.CLN.MUC','GI.RECT.MUC.29','GI.RECT.MUC.31','GI.CLN.SIG'
 # BLD.CD4.CD25M.IL17P.PL.TPC      Primary T helper 17 cells PMA-I stimulated 
 # treg, cd14 roadmap, cd14 encode, nk, t helper memory, t helper naive
 # BLD.CD14.MONO is from encode, TCP is both naive and memory, NPC only naive (MPC for memory)
@@ -17,11 +17,12 @@ PAIRINGS={'mono': ['E029','E124'], 'th': ['E037','E038','E043'], 'nk': ['E046'],
 LOO={'mono': ['nk', 'th', 'reg', 'th17', 'cytot'], 'nk': ['mono', 'th', 'reg', 'th17', 'cytot'], 'th': ['mono','nk', 'reg', 'th17', 'cytot'], 'reg': ['mono','nk','th', 'th17', 'cytot'], 'th17': ['nk', 'th', 'reg', 'cytot', 'mono'], 'cytot': ['nk', 'th', 'reg', 'th17', 'mono']}
 
 LINES='mono','th','nk','reg', 'cytot', 'th17'
-WANTED_MARKERS='H3K27ac', 'H3K4me1'
+WANTED_MARKERS='H3K27ac', 'H3K4me1', 'DNase'
 
 BASE_URL_CONSOLIDATED_PEAKS='http://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/gappedPeak/'
 BASE_URL_CONSOLIDATED_BW_SIGNAL='http://egg2.wustl.edu/roadmap/data/byFileType/signal/consolidated/macs2signal/foldChange/'
 BASE_URL_CONSOLIDATED_BW_PVAL='http://egg2.wustl.edu/roadmap/data/byFileType/signal/consolidated/macs2signal/pval/'
+BASE_URL_CONSOLIDATED_DNASE='http://egg2.wustl.edu/roadmap/data/byFileType/signal/consolidated/macs2signal/pval/' #E004-DNase.pval.signal.bigwig
 # we get the most robust and curated data 'consolidated' and gappedPeaks (suggested by them: http://egg2.wustl.edu/roadmap/web_portal/processed_data.html)
 #
 # # coords are hg19.
