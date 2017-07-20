@@ -152,12 +152,12 @@ rule crosstab_motifbr:
          merged = data2.join(data1)
          merged.to_csv(output[0], sep='\t', index=True)
 
-
+#input: snps=SNPS, overlap=overlap_wf(OVERLAP), create="created.matrix", destroy="destroyed.matrix", lead=LEAD
 rule annotate_motif_divided:
     input: snps=SNPS, overlap=OVERLAP, create="created.matrix", destroy="destroyed.matrix", lead=LEAD
     output: "divided_overlap_lead.xls"
     shell:  """
-            head -n 1 {input.matrix} > {output}.header
+            head -n 1 {input.overlap} > {output}.header
             sed 1d {input.snps} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input.overlap} | cut -f 1 | sort | uniq) \
             | filter_1col 6 <(cut -f 1 {input.lead}) \
             | translate -a {input.overlap} 6 | translate -a -v -e "\t\t\t" {input.create} 1 | translate -a -v -e "\t\t\t" {input.destroy} 1 \
