@@ -109,42 +109,59 @@ rule run_fimo:
     shell: "mkdir -p lead; {params.fimo} --oc lead --thresh 1 {params.pwm} {input} 2> {log}"
 
 ### select SNPs with != scores, at least one 'allele' over a given threshold
-    
-### threshold on score differences?
+# TODO EXPLAIN 
+rule fimo_manage:
+    input: fimo="lead/fimo.txt", annot=PWM_ANNOT
+    output: created="created_lead_fimo", destroyed="destroyed_lead_fimo"
+    params: cutoff=0.05, placeholder="fimo_manage"
+    shell: """
+          cat {input.fimo} | sed 1d |  sed 's/;/\t/g' | tee >(bawk '$4=="allele2" && $15<{params.cutoff} {{print $1"@"$5"@"$10"@"$12,$13,$15}}' > {params.placeholder}.allele2) | bawk '$4=="allele1" && $15<{params.cutoff} {{print $1"@"$5"@"$10"@"$12,$13,$15}}' > {params.placeholder}.allele1
+          translate -v -e "NA\tNA" -a {params.placeholder}.allele1 1 < {params.placeholder}.allele2 | bawk '$2=="NA"{{print $1,$4,$5,"created"}}' > {params.placeholder}.tmp
+          translate -v -e "NA\tNA" -a {params.placeholder}.allele2 1 < {params.placeholder}.allele1 | bawk '$2=="NA"{{print $1,$4,$5,"destroyed"}}' >> {params.placeholder}.tmp
+          tr "@" "\t" < {params.placeholder}.tmp | bawk '$7=="created" {{print $2,$1}}' | translate -a <(cut -f 1,10 {input.annot}) 2 > {output.created}
+          tr "@" "\t" < {params.placeholder}.tmp | bawk '$7=="destroyed" {{print $2,$1}}' | translate -a <(cut -f 1,10 {input.annot}) 2 > {output.destroyed}
+          """
+
+#rm {params.placeholder}.allele1 {params.placeholder}.allele2 {params.placeholder}.tmp
+# the same with filter_1col:
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ filter_1col 1 <(cut -f 1 lead_fimo.allele1) < lead_fimo.allele2 | wc -l
+# 474
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ filter_1col -v 1 <(cut -f 1 lead_fimo.allele1) < lead_fimo.allele2 | wc -l
+# 171
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ filter_1col -v 1 <(cut -f 1 lead_fimo.allele2) < lead_fimo.allele1 | wc -l
+# 248
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ grep -c created lead_fimo
+# lead_fimo             lead_fimo.allele1     lead_fimo.allele2     lead_fimo.gz.allele1  lead_fimo.gz.allele2  
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ grep -c created lead_fimo
+# 171
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ grep -c destroyed lead_fimo
+# 248
+#
 
 #####################################
 # snpid   gene    db      name    id      scoreRef        scoreAlt        effect
 rule crosstab_motifbr:
-    input: "{pwmdb}.motifbr.gz"
-    output: "{pwmdb}.matrix"
+    input: "{kind}_lead_fimo"
+    output: "{kind}.matrix"
     run: 
          import pandas
-         data = pandas.read_csv(input[0], sep="\t", compression='gzip', header=None, names=['snpid','gene'])
+         data = pandas.read_csv(input[0], sep="\t", header=None, names=['snpid','motif','subfamily'])
          #data.groupby(['snpid'])['gene'].agg({'n': 'nunique', 'gene': ','.join}) # deprecated
-         data = data.groupby(['snpid'])['gene'].agg(['nunique', ','.join]).rename(columns={'nunique': 'n_dTF', 'join':'gene'})
-         data.to_csv(output[0], sep='\t', index=True)
+         data1 = data.groupby(['snpid'])['motif'].agg(['nunique', ','.join]).rename(columns={'nunique': 'n_dTF', 'join':'motif'})
+         data2 = data.groupby(['snpid'])['subfamily'].agg(['nunique', lambda x: ','.join(set(x))]).rename(columns={'nunique': 'n_dfam', 'join':'subfamily'})
+         merged = data2.join(data1)
+         merged.to_csv(output[0], sep='\t', index=True)
 
-#3,5,6,28,29
-# The right excel header has to be put together by hand right now.
-rule annotate_motif:
-    input: SNPS, "overlap.matrix", "{pwmdb}.matrix"
-    output: "overlap_{pwmdb}.xls"
-    shell:  """
-            head -n 1 {input[1]} > {output}.header
-            sed 1d {input[0]} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input[1]} | cut -f 1 | sort | uniq) \
-            | translate -a -d -j {input[1]} 6 | translate -a -v -e "\t" -d -j {input[2]} 1 > {output}.body
-            cat {output}.header {output}.body | tab2xls > {output}
-            rm {output}.header {output}.body
-            """
 
 rule annotate_motif_divided:
-    input: SNPS, "overlap.matrix", "{pwmdb}.create.matrix", "{pwmdb}.destroy.matrix", LEAD
-    output: "divided_overlap_{pwmdb}.xls"
+    input: snps=SNPS, overlap=OVERLAP, create="created.matrix", destroy="destroyed.matrix", lead=LEAD
+    output: "divided_overlap_lead.xls"
     shell:  """
-            head -n 1 {input[1]} > {output}.header
-            sed 1d {input[0]} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input[1]} | cut -f 1 | sort | uniq) \
-            | translate -a -d -j {input[1]} 6 | translate -a -v -e "\t" -d -j {input[2]} 1 | translate -a -v -e "\t" -d -j {input[3]} 1 \
-            | translate -a -v -e "" <(bawk '{{print $1,"lead"}}' < {input[4]}) 10 > {output}.body
+            head -n 1 {input.matrix} > {output}.header
+            sed 1d {input.snps} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input.overlap} | cut -f 1 | sort | uniq) \
+            | filter_1col 6 <(cut -f 1 {input.lead}) \
+            | translate -a {input.overlap} 6 | translate -a -v -e "\t\t\t" {input.create} 1 | translate -a -v -e "\t\t\t" {input.destroy} 1 \
+            > {output}.body
             cat {output}.header {output}.body | tab2xls > {output}
             rm {output}.header
             """
