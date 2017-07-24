@@ -18,15 +18,13 @@ rule snps:
     shell:  """
             sed 1d {input[0]} | cut -f 3,5,6,28,29 | bawk '{{print "chr"$1,$3,$3+length($5),$2,$5,$4}}' | sort -k1,1 -k2,2n | uniq > {output}
             """
-# note that this is wrong:
+# note that the consensus has alternatives (cool):
 # # 15      AJ_TFAP2C::MAX_004      TGGCCTCAGGCGATGCGGGCCGAGGCACGTG
 # # 15      PTF1A_HUMAN.H10MO.C     CA/GGGAAAA/CAC/GAACAGCTGC/TC/GC
 # # 15      ZN350_HUMAN.H10MO.C     ACGGGA/GCGCAGGGA/GTTTGTG/TGCCC
 # # 16      BHE41_HUMAN.H10MO.D     ACA/C/GGG/TGC/TCACGTGCAGAA/GGC/G
 # # 16      MA0068.1 Pax4   GAAAAATTTCCA/CATACTCCACTCCCCCCCC
 # #
-# # but in the end it worked out cause I forgot the +1 and we are using 16 which is ok for AJ_TFAP2C::MAX_004 (31bp).
-# # XXX FIXME FUTURE
 # #
 # wroooooong! put the right n. by hand :(
 #  0 1 2 3 4 5 6 7 8 9 10 11 12 13
@@ -133,6 +131,29 @@ rule run_fimo:
     params: pwm=PWM_MEME, fimo=BIN_DIR+"/fimo"
     shell: "mkdir -p lead; {params.fimo} --oc lead --thresh 1 {params.pwm} {input} 2> {log}"
 
+
+########## indel ######
+rule indels:
+    input: "snps_info"
+    output: "indels"
+    shell: """ cat {input} | bawk 'length($5)!=1 {{print $4, length($5), "del"}} length($6)!=1 {{print $4, length($6), "ins"}}' > {output} """
+
+rule: fimo_manage_indels
+    input: ind="indels", fimo="lead/fimo.txt"
+    output: find="lead/fimo_indels.txt", fsnp="lead/fimo_snsps.txt"
+    params: fix=BIN_DIR+"/fix_indels_coords"
+    shell: """
+            tr ";" "\t" < {input.fimo} | filter_1col 5 <(cut -f 1 {input.ind}) > {output.find}.tmp
+            tr ";" "\t" < {input.fimo} | filter_1col -v 5 <(cut -f 1 {input.ind}) | sed 's/\t/;/3; s/\t/;/3; s/\t/;/3; s/\t/;/3; s/\t/;/3; s/\t/;/3;' > {output.fsnp}
+            {params.fix} {input.indels} < {output.find}.tmp > {output.find}
+           """
+######################
+#
+# big files! remove:
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ rm lead/cisml.xml lead/fimo.gff  
+#
+# cannot use -text cause it does not print qvalues in this way
+
 ### select SNPs with != scores, at least one 'allele' over a given threshold
 # TODO EXPLAIN 
 rule fimo_manage:
@@ -185,7 +206,7 @@ rule annotate_motif_divided:
             head -n 1 {input.overlap} > {output}.header
             sed 1d {input.snps} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input.overlap} | cut -f 1 | sort | uniq) \
             | filter_1col 6 <(cut -f 1 {input.lead}) \
-            | translate -a {input.overlap} 6 | translate -a -v -e "\t\t\t" {input.create} 6 | translate -a -v -e "\t\t\t" {input.destroy} 10 \
+            | translate -a {input.overlap} 6 | translate -a -v -e "\t\t\t" {input.create} 6 | translate -a -v -e "\t\t\t" {input.destroy} 6 \
             > {output}.body
             cat {output}.header {output}.body | tab2xls > {output}
             rm {output}.header
