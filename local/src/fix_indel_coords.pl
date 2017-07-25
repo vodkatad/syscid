@@ -56,25 +56,26 @@ while(<STDIN>) {
         my $rs = $line[4];
         $coord = $line[9];
         my $indel = $indels{$rs};
-        my $end_indel = $coord+$indel->[0];
+        my $indel_len = $indel->[0] -1;
+        my $end_indel = $len+$indel_len;
         if ($indel->[1] eq "ins") {
             # we leave as they are coords <= $len, cause the indel does not disrupt them
             # fimo reports 1 based coords, not reversed for - strand matches.
-            if ($coord >= $len) {
+            if ($coord > $len) {
                 # inside the INdels we use fake coords to avoid matching the matches (sic) starting here on the alt allele.
-                if ($coord < $end_indel) {
+                if ($coord <= $end_indel) {
                     $coord = "I" . ($end_indel-$coord);
                 } else {
                     # after the INdels we need to change coords to match right matches (even if they will never be motif changing right now)
-                    $coord = $coord - $indel->[0];
+                    $coord = $coord - $indel_len;
                 } 
             }
         } elsif ($indel->[1] eq "del") {
             # we leave as they are coords <= $len, cause the indel does not disrupt them
             # fimo reports 1 based coords, not reversed for - strand matches.
-            if ($coord >= $len) {
+            if ($coord > $len) {
                 # after the inDELS we need to change coords to match right matches (even if they will never be motif changing right now)
-                $coord = $coord + $indel->[0];
+                $coord = $coord + $indel_len;
                 } 
         } else {
            die "Error for $rs in info! $indel->[1]\n"
