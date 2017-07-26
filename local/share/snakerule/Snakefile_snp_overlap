@@ -19,6 +19,15 @@ rule overlap:
             | cut -f 1,2,4,18,20,21 | translate -a <(cut -f 1,5 {input[2]}) 5 | gzip > {output} 
             """
 
+rule generate_roi:
+    input: snps=SNPS, lead=LEAD, overlap="overlap.matrix"
+    output: "snps_roi.bed"
+    shell: """
+            sed 1d {input.snps} | cut -f 3,5,6,29 | bawk '{{print "chr"$1,$3-1,$3,$2}}' | sort -k1,1 -k2,2n | uniq \
+            | filter_1col 4 {input.lead} | filter_1col 4 <(cut -f 1 {input.overlap}) > {output}
+           """
+
+
 rule all_moverlap:
     input: expand("{mark}.overlap.bed", mark=WANTED_MARKERS)
 
