@@ -1,0 +1,103 @@
+include: "conf.sk"
+
+# Fimo uses a . when it encounters spaces (precious!) in PWM ids.
+rule pmatch:
+    input: PWM_CONS
+    output: "pmatch.fa"
+    shell: """
+            tr " " "." < {input} | perl -pane 's/([ACGT])\/[ACTG](\/[ACTG])*/$1/g;' | perl -ane 'print ">".$F[0]."\n".$F[1]."\n"' > {output}
+           """
+
+#perl -ane 's/([ACGT])\/[ACTG](\/[ACTG])*/$1/g; print ">".$F[0]."\n".$F[1]."\n"' < {input} > {output}
+
+
+### score with fimo (no bg?)
+#fimo --oc $(FIMO_DIR_REF) --norc  --thresh 1 $< $^2
+FIMO_DIR1="pmatch"
+rule run_fimo:
+    input: "pmatch.fa"
+    output: FIMO_DIR1+"/fimo.txt"
+    log: FIMO_DIR1+"/fimo.log"
+    params: pwm=PWM_MEME, fimo=BIN_DIR+"/fimo", dir=FIMO_DIR1
+    shell: "mkdir -p {params.dir}; {params.fimo} --oc {params.dir} --thresh 0.05 --norc {params.pwm} {input} 2> {log}; rm {params.dir}/cisml.xml; rm {params.dir}/fimo.gff"
+
+FIMO_DIR2="pmatch_thr"
+rule run_fimo_thres:
+    input: "pmatch.fa"
+    output: FIMO_DIR2+"/fimo.txt"
+    log: FIMO_DIR2+"/fimo.log"
+    params: pwm=PWM_MEME, fimo=BIN_DIR+"/fimo", dir=FIMO_DIR2
+    shell: "mkdir -p {params.dir}; {params.fimo} --oc {params.dir} --norc {params.pwm} {input} 2> {log}; rm {params.dir}/cisml.xml; rm {params.dir}/fimo.gff"
+
+#### pmatch scores
+
+rule pmatch_score:
+    input: 'pmatch/fimo.txt'
+    output: 'pmatch_score'
+    shell: "bawk '$1==$3{{print $1,$7}}' < {input} > {output}"
+
+######################
+#
+#
+#big files! remove:
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ rm lead/cisml.xml lead/fimo.gff  
+#
+# cannot use -text cause it does not print qvalues in this way
+
+### select SNPs with != scores, at least one 'allele' over a given threshold
+# TODO EXPLAIN 
+rule fimo_manage:
+    input: fimoindel="../lead/fimo_indels.txt", fimosnp="../lead/fimo_snps.txt", annot=PWM_ANNOT
+    output: created="created_lead_fimo", destroyed="destroyed_lead_fimo"
+    params: cutoff=0.05, placeholder="fimo_manage"
+    shell: """
+          cat {input.fimosnp} {input.fimoindel} | sed 1d |  sed 's/;/\t/g' | tee >(bawk '$4=="allele2" && $15<{params.cutoff} {{print $1"@"$5"@"$10"@"$12,$13,$15}}' > {params.placeholder}.allele2) | bawk '$4=="allele1" && $15<{params.cutoff} {{print $1"@"$5"@"$10"@"$12,$13,$15}}' > {params.placeholder}.allele1
+          translate -v -e "NA\tNA" -a {params.placeholder}.allele1 1 < {params.placeholder}.allele2 | bawk '$2=="NA"{{print $1,$4,$5,"created"}}' > {params.placeholder}.tmp
+          translate -v -e "NA\tNA" -a {params.placeholder}.allele2 1 < {params.placeholder}.allele1 | bawk '$2=="NA"{{print $1,$4,$5,"destroyed"}}' >> {params.placeholder}.tmp
+          tr "@" "\t" < {params.placeholder}.tmp | bawk '$7=="created" {{print $2,$1}}' | translate -a <(cut -f 1,10 {input.annot}) 2 > {output.created}
+          tr "@" "\t" < {params.placeholder}.tmp | bawk '$7=="destroyed" {{print $2,$1}}' | translate -a <(cut -f 1,10 {input.annot}) 2 > {output.destroyed}
+          """
+
+#rm {params.placeholder}.allele1 {params.placeholder}.allele2 {params.placeholder}.tmp
+# the same with filter_1col:
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ filter_1col 1 <(cut -f 1 lead_fimo.allele1) < lead_fimo.allele2 | wc -l
+# 474
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ filter_1col -v 1 <(cut -f 1 lead_fimo.allele1) < lead_fimo.allele2 | wc -l
+# 171
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ filter_1col -v 1 <(cut -f 1 lead_fimo.allele2) < lead_fimo.allele1 | wc -l
+# 248
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ grep -c created lead_fimo
+# lead_fimo             lead_fimo.allele1     lead_fimo.allele2     lead_fimo.gz.allele1  lead_fimo.gz.allele2  
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ grep -c created lead_fimo
+# 171
+# [egrassi@gncomp3 huang_inhouse_motifbr]$ grep -c destroyed lead_fimo
+# 248
+#
+
+#####################################
+# snpid   gene    db      name    id      scoreRef        scoreAlt        effect
+rule crosstab_motifbr:
+    input: "{kind}_lead_fimo"
+    output: "{kind}.matrix"
+    run: 
+         import pandas
+         data = pandas.read_csv(input[0], sep="\t", header=None, names=['snpid','motif','subfamily'])
+         #data.groupby(['snpid'])['gene'].agg({'n': 'nunique', 'gene': ','.join}) # deprecated
+         data1 = data.groupby(['snpid'])['motif'].agg(['nunique', ','.join]).rename(columns={'nunique': 'n_dTF', 'join':'motif'})
+         data2 = data.groupby(['snpid'])['subfamily'].agg(['nunique', lambda x: ','.join(set(x))]).rename(columns={'nunique': 'n_dfam', 'join':'subfamily'})
+         merged = data2.join(data1)
+         merged.to_csv(output[0], sep='\t', index=True)
+
+#input: snps=SNPS, overlap=overlap_wf(OVERLAP), create="created.matrix", destroy="destroyed.matrix", lead=LEAD
+rule annotate_motif_divided:
+    input: snps=SNPS, overlap=OVERLAP, create="created.matrix", destroy="destroyed.matrix", lead=LEAD
+    output: "divided_overlap_lead.xls"
+    shell:  """
+            head -n 1 {input.overlap} > {output}.header
+            sed 1d {input.snps} | bawk '{{print "chr"$3":"$6-1":"$29":"$28,$0}}' | filter_1col 6 <(cat {input.overlap} | cut -f 1 | sort | uniq) \
+            | filter_1col 6 <(cut -f 1 {input.lead}) \
+            | translate -a {input.overlap} 6 | translate -a -v -e "\t\t\t" {input.create} 6 | translate -a -v -e "\t\t\t" {input.destroy} 6 \
+            > {output}.body
+            cat {output}.header {output}.body | tab2xls > {output}
+            rm {output}.header
+            """

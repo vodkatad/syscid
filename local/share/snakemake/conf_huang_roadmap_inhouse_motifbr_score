@@ -1,0 +1,25 @@
+PRJ_DIR='/data/egrassi/snaketree/prj/syscid'
+SRC_DIR=PRJ_DIR+"/local/src/"
+BIN_DIR=PRJ_DIR+"/local/bin/"
+
+SNPS=PRJ_DIR+"/local/share/data/huang_nc_snps_manual.tsv"
+# this has two snps alleles manually fixed:
+#>het;allele2;rs398097167;chr10;101288101;101288134;rs398097167-
+#TAGCAACAACAAAAAIAGTTAAGGAATGCATTC
+#--
+#>het;allele1;rs796819847;chr6;20640407;20640440;rs796819847-
+#CTCAAAACATGCTTTITGGGTTCAAGACAATCA
+
+LEAD=PRJ_DIR+'/local/share/data/nc_leads'
+
+PWM_CONS=PRJ_DIR+"/local/share/data/PWMs20170320/PWMs/20170320_pwms_selected.consensus"
+PWM_MEME=PRJ_DIR+"/local/share/data/PWMs20170320/PWMs/20170320_pwms_selected.meme"
+PWM_ANNOT=PRJ_DIR+"/local/share/data/PWMs20170320/PWMs/20170320_PWMs_TFs_corr.TFClass.tab" # column 10 is the subfamily, which Gioacchino needs.
+
+SEQ_DIR="/data/egrassi/snaketree/task/sequences/dataset/iGenomes/human/hg19"
+CHRS=["chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr1","chr20","chr21","chr22","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9"]
+
+OVERLAP=PRJ_DIR+'/dataset/huang_roadmap_overlap/overlap.matrix'
+#subworkflow overlap_wf:
+#    workdir: PRJ_DIR+'/dataset/huang_roadmap_overlap/'
+#    snakefile: PRJ_DIR+'/dataset/huang_roadmap_overlap/Snakefile'
