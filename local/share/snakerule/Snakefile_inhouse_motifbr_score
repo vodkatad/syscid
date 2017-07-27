@@ -47,11 +47,11 @@ rule pmatch_score:
 ### select SNPs with != scores, at least one 'allele' over a given threshold
 # TODO EXPLAIN 
 rule fimo_manage:
-    input: fimoindel="../lead/fimo_indels.txt", fimosnp="../lead/fimo_snps.txt", annot=PWM_ANNOT
+    input: fimoindel="../lead/fimo_indels.txt", fimosnp="../lead/fimo_snps.txt", annot=PWM_ANNOT, pmatch="pmatch_score"
     output: created="created_lead_fimo", destroyed="destroyed_lead_fimo"
     params: cutoff=0.05, placeholder="fimo_manage"
     shell: """
-          cat {input.fimosnp} {input.fimoindel} | sed 1d |  sed 's/;/\t/g' | tee >(bawk '$4=="allele2" && $15<{params.cutoff} {{print $1"@"$5"@"$10"@"$12,$13,$15}}' > {params.placeholder}.allele2) | bawk '$4=="allele1" && $15<{params.cutoff} {{print $1"@"$5"@"$10"@"$12,$13,$15}}' > {params.placeholder}.allele1
+          cat {input.fimosnp} {input.fimoindel} | sed 1d |  translate -a {input.pmatch} 1 |  sed 's/;/\t/g' | tee >(bawk '$5=="allele2" && $16<{params.cutoff} && $14 > ($2*0.8){{print $1"@"$6"@"$11"@"$13,$14,$16}}' > {params.placeholder}.allele2) | bawk '$5=="allele1" && $16<{params.cutoff} && $14 > ($2*0.8) {{print $1"@"$6"@"$11"@"$13,$14,$16}}' > {params.placeholder}.allele1
           translate -v -e "NA\tNA" -a {params.placeholder}.allele1 1 < {params.placeholder}.allele2 | bawk '$2=="NA"{{print $1,$4,$5,"created"}}' > {params.placeholder}.tmp
           translate -v -e "NA\tNA" -a {params.placeholder}.allele2 1 < {params.placeholder}.allele1 | bawk '$2=="NA"{{print $1,$4,$5,"destroyed"}}' >> {params.placeholder}.tmp
           tr "@" "\t" < {params.placeholder}.tmp | bawk '$7=="created" {{print $2,$1}}' | translate -a <(cut -f 1,10 {input.annot}) 2 > {output.created}
