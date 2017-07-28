@@ -1,0 +1,12 @@
+include: "conf.sk"
+
+rule ld_friends:
+    input: snps=SNPS, ld=LD
+    output: 'snps_loci_ld_{cutoff}'
+    params: find_ld=BIN_DIR+"/find_ld"
+    shell: "zcat {input.ld} | {params.find_ld} -c {wildcards.cutoff} -s {input.snps} > {output}"
+
+
+# then a rule to merge loci based on shared snps
+
+# then a rule to assign coords to loci and merge using them

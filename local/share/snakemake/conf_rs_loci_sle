@@ -1,0 +1,16 @@
+PRJ_DIR='/data/egrassi/snaketree/prj/syscid'
+SRC_DIR=PRJ_DIR+"/local/src/"
+BIN_DIR=PRJ_DIR+"/local/bin/"
+NAME="sle"
+FARH=PRJ_DIR+'/local/share/data/'+NAME+'_farh.txt' 
+GREEK=PRJ_DIR+'/local/share/data/'+NAME+'_rs.txt'
+
+# We need haploreg to find coords.
+HAPLOREG=PRJ_DIR+'/local/share/data/haploreg_v4.0_20151021.vcf.gz'
+SNPS="snps"
+# And LD info from them to define islands, I got the EUR one.
+LD=PRJ_DIR+'/local/share/data/LD_EUR.tsv.gz'
+rule mix_snps:
+    input: FARH, GREEK
+    output: SNPS
+    shell: "cat {input} | sort | uniq > {output}"
