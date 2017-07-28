@@ -43,7 +43,7 @@ while (<SNP>) {
     if (defined $rs_ids{$_}) {
         die "Error duplicated snp $_\n";
     } else {
-        $rs_ids{$_} = 1;
+        $rs_ids{$_} = 0;
     }
 }
 
@@ -65,9 +65,17 @@ while(<STDIN>) {
                 print "$n_loci\t$rs\n";
             }
         }
-        if ($has_friends) {
-            print "$n_loci\t$line[0]\n";
-            $n_loci++;
-        }
+        #if ($has_friends) {
+        print "$n_loci\t$line[0]\n";
+        $n_loci++;
+        #} #stupid Elena, y you want to forgot lonely singleton?
+        $rs_ids{$line[0]} = 1;
+    }
+}
+
+foreach my $rs (keys(%rs_ids)) {
+    if ($rs_ids{$rs} == 0) {
+        print "$n_loci\t$rs\n";
+        $n_loci++;
     }
 }
