@@ -5,6 +5,7 @@ NAME="sle"
 FARH=PRJ_DIR+'/local/share/data/'+NAME+'_farh.txt' 
 GREEK=PRJ_DIR+'/local/share/data/'+NAME+'_rs.txt'
 
+CHRS=["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y"]
 # We need haploreg to find coords.
 HAPLOREG=PRJ_DIR+'/local/share/data/haploreg_v4.0_20151021.vcf.gz'
 SNPS="snps"

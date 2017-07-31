@@ -22,6 +22,7 @@ rule ld_graph:
             bawk '$1=="{wildcards.chr}"' {input} | {params.tool} -r {wildcards.chr} -c {wildcards.cutoff} > {output}
            """
 
-
 rule all_ld_graph:
-    
+    input: expand("{chr}_snps_loci_ld_{{cutoff}}", chr=CHRS)
+    output: "snps_loci_ld_{cutoff}"
+    shell: "cat {input} > {output}"
