@@ -6,7 +6,13 @@ rule ld_friends:
     params: find_ld=BIN_DIR+"/find_ld"
     shell: "zcat {input.ld} | {params.find_ld} -c {wildcards.cutoff} -s {input.snps} > {output}"
 
-
 # then a rule to merge loci based on shared snps
+#rule merge_ld:
+#    input: 'snps_loci_ld_0.8'
+# ideally: get all repeated SNPs in different loci and merge all their loci
+# load an hash where key is rs and array of loci are values
+# define the loci that needs to be renamed (if there are more values for some rs they needs renaming) and iterate on hash to do so
+# print out new results
+
 
 # then a rule to assign coords to loci and merge using them

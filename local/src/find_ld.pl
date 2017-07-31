@@ -3,7 +3,8 @@
 use warnings;
 use strict;
 
-# write something relevant here TODO
+# Given a list of SNPs and a file with LD info (haploreg format) produces 'loci', i.e. for each
+# of the given SNPs the ones found in LD with them (R2 > given cutoff). Does not merge loci with commons SNPs, this is done by merge_ld.
 use Getopt::Long;
 
 my $help=0;
