@@ -1,18 +1,27 @@
 include: "conf.sk"
 
+# top ram usage is 7%
+# real    11m40.986s
+# user    8m4.596s
+# sys     0m39.287s
+#
 rule ld_friends:
-    input: snps=SNPS, ld=LD
-    output: 'snps_loci_ld_{cutoff}'
-    params: find_ld=BIN_DIR+"/find_ld"
-    shell: "zcat {input.ld} | {params.find_ld} -c {wildcards.cutoff} -s {input.snps} > {output}"
+    input: snps=SNPS, ld=LD, vcf=HAPLOREG
+    output: 'snps_loci_ld'
+    params: tool=BIN_DIR+"/produce_ld_for_merge"
+    log: 'snps_loci_ld_no_coords'
+    shell: """
+            zcat {input.ld} | {params.tool} -c <(zcat {input.vcf} | grep -v "^#" | cut -f 1,2,3) -s {input.snps} > {output} 2> {log}
+           """
 
-# then a rule to merge loci based on shared snps
-#rule merge_ld:
-#    input: 'snps_loci_ld_0.8'
-# ideally: get all repeated SNPs in different loci and merge all their loci
-# load an hash where key is rs and array of loci are values
-# define the loci that needs to be renamed (if there are more values for some rs they needs renaming) and iterate on hash to do so
-# print out new results
+rule ld_graph:
+    input: 'snps_loci_ld'
+    output: '{chr}_snps_loci_ld_{cutoff}'
+    params: tool=BIN_DIR+"/make_ld_islands_graph"
+    shell: """
+            bawk '$1=="{wildcards.chr}"' {input} | {params.tool} -r {wildcards.chr} -c {wildcards.cutoff} > {output}
+           """
 
 
-# then a rule to assign coords to loci and merge using them
+rule all_ld_graph:
+    
