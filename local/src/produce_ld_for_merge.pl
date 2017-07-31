@@ -97,7 +97,7 @@ while(<STDIN>) {
             }
             if ($has_friends == 0) {
                 # dummy printing
-                print "$mine_infos[0]\t$mine_infos[1]\tdummy\t$line[0]\tdummy\t0\n";
+                print "$mine_infos[0]\t$mine_infos[1]\t0\t$line[0]\tdummy\t0\n";
             }
         }
     }
@@ -111,7 +111,7 @@ foreach my $rs (keys(%rs_ids)) {
             next;
         } else {
             my @mine_infos = split('_', $mine_info);
-            print "$mine_infos[0]\t$mine_infos[1]\tdummy\t$rs\tdummy\t0\n";
+            print "$mine_infos[0]\t$mine_infos[1]\t0\t$rs\tdummy\t0\n";
         } 
     }
 }

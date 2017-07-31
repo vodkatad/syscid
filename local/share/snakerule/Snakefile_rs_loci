@@ -19,10 +19,17 @@ rule ld_graph:
     output: '{chr}_snps_loci_ld_{cutoff}'
     params: tool=BIN_DIR+"/make_ld_islands_graph"
     shell: """
-            bawk '$1=="{wildcards.chr}"' {input} | {params.tool} -r {wildcards.chr} -c {wildcards.cutoff} > {output}
+            bawk '$1=="{wildcards.chr}"{{print $2,$3,$4,$5,$6}}' {input} | {params.tool} -r {wildcards.chr} -c {wildcards.cutoff} > {output}
            """
 
 rule all_ld_graph:
     input: expand("{chr}_snps_loci_ld_{{cutoff}}", chr=CHRS)
     output: "snps_loci_ld_{cutoff}"
     shell: "cat {input} > {output}"
+
+rule all_interesting_ld_graph:
+    input: ld="snps_loci_ld_{cutoff}", snps=SNPS
+    output: "wantedsnps_loci_ld_{cutoff}"
+    shell: "grep -w -v dummy {input.ld}  | grep -w -f {input.snps} > {output}"
+    
+

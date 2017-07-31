@@ -25,7 +25,7 @@ def main():
 		node1 = tokens[2] + "_" + tokens[0]
 		node2 = tokens[3] + "_" + tokens[1]
 		r2 = float(tokens[4])
-		if r2 > options.cutoff:
+		if r2 >= options.cutoff:
 			ldGraph.add_edge(node1, node2)
 		else:
 			ldGraph.add_node(node1)
