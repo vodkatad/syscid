@@ -30,6 +30,6 @@ rule all_ld_graph:
 rule all_interesting_ld_graph:
     input: ld="snps_loci_ld_{cutoff}", snps=SNPS
     output: "wantedsnps_loci_ld_{cutoff}"
-    shell: "grep -w -v dummy {input.ld}  | grep -w -f {input.snps} > {output}"
+    shell: "grep -w -v dummy {input.ld}  | grep -f {input.snps} > {output}"
     
 
