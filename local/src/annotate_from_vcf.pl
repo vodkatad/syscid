@@ -63,22 +63,20 @@ close(INFO);
 
 my $vcf = Vcf->new(fh=>\*STDIN);
 $vcf->parse_header();
-my $ordered_id = 1;
-while (my $x=$vcf->next_data_hash()) {
-	my $id = $x->{"ID"};
+while (my $x=$vcf->next_line()) {
+    chomp($x);
+    my $cols = $vcf->split_mandatory($x);
+	my $id = $cols->[2];
     my $locus_info = $rs_ids{$id};
     if (defined($locus_info)) {
-    	my $chr = $x->{"CHROM"};
-    	my $coord = $x->{"POS"};
-    	my $reference = $x->{"REF"};
-	    my $alts = $x->{"ALT"};
-        my $alt = "$alts->[0]";
-        for (my $i = 1; $i < scalar( @{ $alts } ); $i++) {
-            $alt = $alt . "," . $alts->[$i];
-        }
+    	my $chr = $cols->[0];
+    	my $coord = $cols->[1];
+    	my $reference = $cols->[3];
+	    my $alt = $cols->[4];
         print "$locus_info\t$chr\t$coord\t$id\t$reference\t$alt";
+        # the fucking conservation info are just 'flag', so we use get_info_field instead of $x->{"INFO"}{$i};
         foreach my $i (@wanted_info) {
-            my $value = $x->{"INFO"}{$i};
+            my $value = $vcf->get_info_field($x, $i);
         	if (defined($value)) {
                 print "\t$value"; 
             } else {
