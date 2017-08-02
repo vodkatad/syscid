@@ -3,82 +3,88 @@
 use warnings;
 use strict;
 
-#TODO
+use lib '/data/egrassi/snaketree/prj/syscid/local/src/vcftools-vcftools-1d27c24/src/perl';
 use Getopt::Long;
 use Vcf;
 
 my $help=0;
 my $snps="";
-my $cutoff=-1;
+my $info="";
 
 my $usage=<<END;
-Usage: $0 -s snps -c cutoff < ld_info_haploreg_format (rs10    rs2237570,0.3,-0.72; ...)
+Usage: $0 -s snps -i info < vcf
 	-s | --snp: rs ids
-    -c | --cutoff: r2 threshold to consider two SNPS in LD
+    -i | --info: wanted info
 
-    output is locus_id \t rsid, the last one is the snp given in the snps file
 END
 
 GetOptions (
 	'help'=>\$help,
 	'snp=s' =>\$snps,
-	'cutoff=f' =>\$cutoff,
+	'info=s' =>\$info,
 ) or die($usage);
 
-
-exit(0);
 
 if($help){
 	print($usage);
 	exit(0);
 }
 
-if($snps eq "" || $cutoff==-1){
+if($snps eq "" || $info eq ""){
 	print "A mandatory argument is missing!\n";
 	die($usage);
 }
 
 open(SNP, $snps) || die "Error: $!, opening $snps\n";
-
 my %rs_ids;
+my $locus_id = 0;
 while (<SNP>) {
     chomp;
-    if (defined $rs_ids{$_}) {
-        die "Error duplicated snp $_\n";
-    } else {
-        $rs_ids{$_} = 0;
-    }
-}
-
-my $n_loci = 0;
-while(<STDIN>) {
-    #[egrassi@gncomp3 data]$ zcat LD_EUR.tsv.gz  | head -n 1
-    #rs10    rs2237570,0.3,-0.72;rs117465896,0.75,-0.88;rs1972508,0.3,0.87;rs4727281,0.61,0.93;
-    chomp;
     my @line = split("\t", $_);
-    my $has_friends = 0;
-    if (exists($rs_ids{$line[0]})) {
-        my @friends = split(';', $line[1]);
-        foreach my $f (@friends) {
-            my @r = split(',', $f);
-            my $rs = $r[0];
-            my $r2 = $r[1];
-            if ($r2 >= $cutoff) {
-                $has_friends = 1;
-                print "$n_loci\t$rs\n";
+    my @rss = split("_", $line[3]);
+    foreach my $rs (@rss) {
+        if (defined $rs_ids{$rs}) {
+            die "Error duplicated snp $_\n";
+        } else {
+            $rs_ids{$rs} = "$locus_id\t$line[0]\t$line[1]\t$line[2]";
+        }
+    }
+    $locus_id++;
+}
+close(SNP);
+
+open(INFO, $info) || die "Error: $!, opening $info\n";
+my @wanted_info;
+while (<INFO>) {
+    chomp;
+    push(@wanted_info, $_);
+}
+close(INFO);
+
+my $vcf = Vcf->new(fh=>\*STDIN);
+$vcf->parse_header();
+my $ordered_id = 1;
+while (my $x=$vcf->next_data_hash()) {
+	my $id = $x->{"ID"};
+    my $locus_info = $rs_ids{$id};
+    if (defined($locus_info)) {
+    	my $chr = $x->{"CHROM"};
+    	my $coord = $x->{"POS"};
+    	my $reference = $x->{"REF"};
+	    my $alts = $x->{"ALT"};
+        my $alt = "$alts->[0]";
+        for (my $i = 1; $i < scalar( @{ $alts } ); $i++) {
+            $alt = $alt . "," . $alts->[$i];
+        }
+        print "$locus_info\t$chr\t$coord\t$id\t$reference\t$alt";
+        foreach my $i (@wanted_info) {
+            my $value = $x->{"INFO"}{$i};
+        	if (defined($value)) {
+                print "\t$value"; 
+            } else {
+                print "\tNA";
             }
         }
-        #if ($has_friends) {
-        print "$n_loci\t$line[0]\n";
-        $n_loci++;
-        #} #stupid Elena, y you want to forgot lonely singleton?
-        $rs_ids{$line[0]} = 1;
-    }
-}
-
-foreach my $rs (keys(%rs_ids)) {
-    if ($rs_ids{$rs} == 0) {
-        print "$n_loci\t$rs\n";
-        $n_loci++;
+        print "\n";
     }
 }

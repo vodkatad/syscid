@@ -32,4 +32,33 @@ rule all_interesting_ld_graph:
     output: "wantedsnps_loci_ld_{cutoff}"
     shell: "grep -w -v dummy {input.ld}  | grep -f {input.snps} > {output}"
     
+# we now have this perl do two different things, not so good: our loci managment and looking for info.
+# another more granular possibility would be to obtain a plain list of all the snps and then put back there loci informations,
+# but sincerely...I do not think this would matter right now since I do not have time to think wisely about general reusable tool
+# and probably it would represent a waste of time at the end (reusable by me...).
+rule haploreg_vcf_info:
+    input: snps="wantedsnps_loci_ld_0.8", vcf=HAPLOREG, info=WANTED_INFO
+    output: "snps_haploreg_info.gz"
+    params: tool=BIN_DIR+"/annotate_from_vcf"
+    shell: """ 
+                zcat {input.vcf} | {params.tool} -s {input.snps} -i {input.info} | gzip > {output}
+           """
 
+#META:
+#1 LOCUS ID
+#2 LOCUS CHR
+#3 LOCUS START
+#4 LOCUS END
+#5 CHR RS
+#6 COORD RS
+#7 RSID
+#8 REF
+#9 ALT (biallelic comma sep)
+#10 AF AFR,AMR,ASN,EUR
+#11 NEAREST_GENCODE
+#12 ROADMAP_CHROMHMM_15STATE
+#13 ROADMAP_HISTONE_MARK_PEAKS
+#14 ROADMAP_DNASE
+#15 DBSNP
+#16 SIPHY
+#
