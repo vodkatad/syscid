@@ -61,4 +61,64 @@ rule haploreg_vcf_info:
 #14 ROADMAP_DNASE
 #15 DBSNP
 #16 SIPHY
+
+rule filter_vcf_info:
+    input: info="snps_haploreg_info.gz", eid=EID, eid_info=EID_INFO
+    output: "snps_haploreg_filtered_info"
+    run:
+        import gzip
+        weid = {}
+        with open(input.eid, 'r') as eid:
+            for l in eid.readlines():
+                l = l.rstrip()
+                weid[l] = "NA"
+        with open(input.eid_info, 'r') as eid_info:
+            for l in eid_info.readlines():
+                l = l.rstrip()
+                fields = l.split("\t")
+                if fields[0] in weid:
+                    weid[fields[0]] = fields[5]
+        with open(output[0], "w") as out, gzip.open(input.info, 'rt') as info:
+                for l in info.readlines():
+                    l = l.rstrip()
+                    fields = l.split("\t")
+                    # field 9 is AF, we split on , and keep only EUR (3)
+                    if fields[9] != 'NA':
+                        afs = fields[9].split(',')
+                        fields[9] = afs[3]
+                    # we need to look only for our EIDs in field 11,12,13 and translate them
+                    def look_for_eids(all_piped, eid) :
+                        if all_piped != "NA":
+                            res = []
+                            cells = all_piped.split('|')
+                            for c in cells:
+                                mark_cell = c.split(',')
+                                # dnase is not mark,eid but just eid
+                                if len(mark_cell) == 2:
+                                    mark = mark_cell[0]
+                                    eid = mark_cell[1]
+                                    if eid in weid:
+                                        res.append(mark + "," + weid[eid])
+                                else:
+                                    eid = mark_cell[0]
+                                    if eid in weid:
+                                        res.append(weid[eid])
+                            return '|'.join(res)
+                        else:
+                            return "NA"
+                    fields[11] = look_for_eids(fields[11], eid)
+                    fields[12] = look_for_eids(fields[12], eid)
+                    fields[13] = look_for_eids(fields[13], eid)
+                    out.write("\t".join(fields))
+                    out.write("\n")
+
+
+
+# Remember to filter out those without any overlap!!!
+#[egrassi@gncomp3 sle]$ cat snps_haploreg_filtered_info |  bawk '$13!=""' | wc -l
+#3648
+#[egrassi@gncomp3 sle]$ cat snps_haploreg_filtered_info |  bawk '$13==""' | wc -l
+#1162
+#[egrassi@gncomp3 sle]$ cat snps_haploreg_filtered_info |  bawk '$13=="NA"' | wc -l
+#283
 #

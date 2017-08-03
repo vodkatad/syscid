@@ -16,3 +16,7 @@ rule mix_snps:
     input: FARH, GREEK
     output: SNPS
     shell: "cat {input} | sort | uniq > {output}"
+
+
+EID_INFO=PRJ_DIR+"/dataset/roadmap/eid_info"
+EID=PRJ_DIR+"/dataset/roadmap/wanted_eids"
