@@ -31,7 +31,24 @@ rule all_interesting_ld_graph:
     input: ld="snps_loci_ld_{cutoff}", snps=SNPS
     output: "wantedsnps_loci_ld_{cutoff}"
     shell: "grep -w -v dummy {input.ld}  | grep -f {input.snps} > {output}"
-    
+ 
+
+rule merge_islands:
+    input: "wantedsnps_loci_ld_{cutoff}"
+    output: "mergedwantedsnps_loci_ld_{cutoff}"
+    shell: "sort -k1,1 -k2,2n {input} | bedtools merge -delim '_' -c 4 -o collapse -i - > {output}"
+
+### get all SNPs inside 0.8 R2 linkage islands.
+# bedtools  intersect -a ../../local/share/data/haploreg_v4.0_20151021.vcf.gz -b wantedsnps_loci_ld_0.8 > prova_intersect
+rule get_overlapping:
+    input: snps="mergedwantedsnps_loci_ld_0.8", vcf=HAPLOREG
+    output: "wanted_snps_loci_overlapping"
+    shell: """
+            cut -f 4 {input.snps} | tr "_" "\n" > {output}.snps.tmp
+            zcat {input.vcf} | grep -v "^#" | bawk '{{print $1, $2-1, $2, $3}}' | filter_1col -v 4 {output}.snps.tmp > {output}.vcfbed.tmp
+            bedtools intersect -wa -wb -a {input.snps} -b {output}.vcfbed.tmp > {output}
+           """ 
+   
 # we now have this perl do two different things, not so good: our loci managment and looking for info.
 # another more granular possibility would be to obtain a plain list of all the snps and then put back there loci informations,
 # but sincerely...I do not think this would matter right now since I do not have time to think wisely about general reusable tool
@@ -64,7 +81,7 @@ rule haploreg_vcf_info:
 
 rule filter_vcf_info:
     input: info="snps_haploreg_info.gz", eid=EID, eid_info=EID_INFO
-    output: "snps_haploreg_filtered_info"
+    output: out="snps_haploreg_filtered_info"
     run:
         import gzip
         weid = {}
@@ -78,8 +95,12 @@ rule filter_vcf_info:
                 fields = l.split("\t")
                 if fields[0] in weid:
                     weid[fields[0]] = fields[5]
-        with open(output[0], "w") as out, gzip.open(input.info, 'rt') as info:
+        with open(output.out, "w") as out, gzip.open(input.info, 'rt') as info:#, open(output.n, "w") as n:
+                #i = 0
                 for l in info.readlines():
+                    #n.write(str(i))
+                    #n.write("\n")
+                    #i = i+1
                     l = l.rstrip()
                     fields = l.split("\t")
                     # field 9 is AF, we split on , and keep only EUR (3)
@@ -113,7 +134,6 @@ rule filter_vcf_info:
                     out.write("\n")
 
 
-
 # Remember to filter out those without any overlap!!!
 #[egrassi@gncomp3 sle]$ cat snps_haploreg_filtered_info |  bawk '$13!=""' | wc -l
 #3648
@@ -122,3 +142,9 @@ rule filter_vcf_info:
 #[egrassi@gncomp3 sle]$ cat snps_haploreg_filtered_info |  bawk '$13=="NA"' | wc -l
 #283
 #
+#[egrassi@gncomp3 sle]$ cat snps_haploreg_filtered_info |  bawk '$13!=""' | wc -l
+#3648
+#[egrassi@gncomp3 sle]$ cat snps_haploreg_filtered_info |  bawk '$13==""' | wc -l
+#1162
+#
+## so remember that you have 4810 SNPs but only 3648 overlapping with epigenetic markers.
