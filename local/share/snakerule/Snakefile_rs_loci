@@ -5,6 +5,11 @@ include: "conf.sk"
 # user    8m4.596s
 # sys     0m39.287s
 #
+# On tungsteno 18%
+#real    12m41.042s
+#user    8m52.729s
+#sys     0m21.549s
+
 rule ld_friends:
     input: snps=SNPS, ld=LD, vcf=HAPLOREG
     output: 'snps_loci_ld'

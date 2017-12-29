@@ -1,7 +1,7 @@
 PRJ_DIR='/mnt/purple/data/syscid/'
 SRC_DIR=PRJ_DIR+"/local/src/"
 BIN_DIR=PRJ_DIR+"/local/bin/"
-NAME="sle"
+NAME="ra"
 FARH=PRJ_DIR+'/local/share/data/'+NAME+'_farh.txt' 
 GREEK=PRJ_DIR+'/local/share/data/'+NAME+'_rs.txt'
 
