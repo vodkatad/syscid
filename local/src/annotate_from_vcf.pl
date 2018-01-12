@@ -3,7 +3,8 @@
 use warnings;
 use strict;
 
-use lib '/data/egrassi/snaketree/prj/syscid/local/src/vcftools-vcftools-1d27c24/src/perl';
+#use lib '/mnt/purple/data/syscid/local/src/vcftools-vcftools-1d27c24/src/perl';
+use lib '/mnt/purple/data/syscid/local/src/vcftools-vcftools-ea875e2/src/perl';
 use Getopt::Long;
 use Vcf;
 

@@ -89,6 +89,7 @@ rule filter_vcf_info:
     output: out="snps_haploreg_filtered_info"
     run:
         import gzip
+        import re
         weid = {}
         with open(input.eid, 'r') as eid:
             for l in eid.readlines():
@@ -107,31 +108,33 @@ rule filter_vcf_info:
                     #n.write("\n")
                     #i = i+1
                     l = l.rstrip()
+                    l = re.sub('NA','', l)
                     fields = l.split("\t")
                     # field 9 is AF, we split on , and keep only EUR (3)
-                    if fields[9] != 'NA':
+                    if fields[9] != '':
                         afs = fields[9].split(',')
                         fields[9] = afs[3]
                     # we need to look only for our EIDs in field 11,12,13 and translate them
                     def look_for_eids(all_piped, eid) :
-                        if all_piped != "NA":
+                        if all_piped != '':
                             res = []
-                            cells = all_piped.split('|')
+                            cells = all_piped.split(',')
                             for c in cells:
-                                mark_cell = c.split(',')
-                                # dnase is not mark,eid but just eid
+                                mark_cell = c.split('|')
+                                # dnase is not eid|mark but just eid
                                 if len(mark_cell) == 2:
-                                    mark = mark_cell[0]
-                                    eid = mark_cell[1]
+                                    mark = mark_cell[1]
+                                    eid = mark_cell[0]
                                     if eid in weid:
-                                        res.append(mark + "," + weid[eid])
+                                        res.append(mark + "|" + weid[eid])
                                 else:
                                     eid = mark_cell[0]
                                     if eid in weid:
                                         res.append(weid[eid])
-                            return '|'.join(res)
-                        else:
-                            return "NA"
+                            if len(res) == 0:
+                                return 'other cells'
+                            return ','.join(res)
+                        return ''
                     fields[11] = look_for_eids(fields[11], eid)
                     fields[12] = look_for_eids(fields[12], eid)
                     fields[13] = look_for_eids(fields[13], eid)
