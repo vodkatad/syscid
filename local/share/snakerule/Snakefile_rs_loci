@@ -156,3 +156,12 @@ rule filter_vcf_info:
 #1162
 #
 ## so remember that you have 4810 SNPs but only 3648 overlapping with epigenetic markers.
+
+# We remove snps falling in categories with a clear coding role and obtain a bed for capsecum, ids are locus_rs
+
+rule capsecum:
+    input: snps="snps_haploreg_filtered_info", filter=CODING_DBSNP
+    output: "capsecum.bed"
+    shell: """
+            bawk '{{if ($15 =="") {{$15="NA"}} print}}' {input.snps} | filter_1col -v 15 {input.filter} | bawk '{{print $2,$6-1,$6,$1"_"$7}}' > {output}
+           """ 
