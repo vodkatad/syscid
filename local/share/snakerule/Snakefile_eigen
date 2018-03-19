@@ -1,0 +1,23 @@
+include: "conf.sk"
+
+rule all_eigen_data:
+	input: expand(EIGEN_PREFIX+"{chr}.{suffix}", chr=CHRS, suffix=EIGEN_SUFFIXES)
+
+
+rule eigen_data:
+	output: EIGEN_PREFIX+"{chr}.{suffix}"
+	params: EIGEN_URL
+	shell: """
+		wget -O {output} {params}{output}
+		"""
+
+# todo md5sum check
+rule md5sum:
+	output: our="our_md5", their_md5="their_md5"
+	shell: """
+		rm -f {output.our}
+		wget https://xioniti01.u.hpc.mssm.edu/v1.1/md5checksums.txt -O {output.their}
+		for f in *bgz; do 
+			md5sum $f >> {output.our};
+		done
+		"""
