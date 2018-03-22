@@ -54,6 +54,14 @@ rule get_overlapping:
             bedtools intersect -wa -wb -a {input.snps} -b {output}.vcfbed.tmp > {output}
            """ 
    
+rule tile_loci:
+    input: 'mergedwantedsnps_loci_ld_0.8'
+    output: 'roi_tiling_{length}.bed'
+    params: tool=BIN_DIR+"/tile_loci"
+    shell: """
+		{params.tool} -l {wildcards.length} < {input} > {output}
+	   """
+
 # we now have this perl do two different things, not so good: our loci managment and looking for info.
 # another more granular possibility would be to obtain a plain list of all the snps and then put back there loci informations,
 # but sincerely...I do not think this would matter right now since I do not have time to think wisely about general reusable tool
