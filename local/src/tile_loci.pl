@@ -55,9 +55,9 @@ while(<STDIN>) {
 			$counter++;
 			$ep += $tile;
 		}
-		my $covered = ($counter-1)*$tile;
-		my $reached = $b+$covered;
-		$ep= $reached+int(($e-$reached)/2);
+		#my $covered = $counter*$tile; # -1 or not?
+		my $reached = $ep-$tile;
+		$ep = $reached+int(($e-$reached)/2);
 		if ($ep > $e) {
 			die "Something bad for $snps, $ep, $e, $tile";
 		}
@@ -68,5 +68,5 @@ while(<STDIN>) {
 sub spit_out {
 	my ($chr, $start, $id) = @_;
 	#print "$chr. $start . $id \n";
-	print $chr . "\t" . $start . "\t" . ($start+1) . "\t" . $id . "\n";
+	print 'chr'.$chr . "\t" . $start . "\t" . ($start+1) . "\t" . $id . "\n";
 }
