@@ -20,3 +20,5 @@ rule mix_snps:
 
 EID_INFO=PRJ_DIR+"/dataset/roadmap/eid_info"
 EID=PRJ_DIR+"/dataset/roadmap/wanted_eids"
+
+CODING_DBSNP=PRJ_DIR+'/local/share/data/dbsnp_coding_classes'

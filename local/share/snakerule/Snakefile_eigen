@@ -21,3 +21,13 @@ rule md5sum:
 			md5sum $f >> {output.our};
 		done
 		"""
+rule all_join:
+	input: expand("{chr}_join.tsv", chr=DCHRS)
+
+
+rule eigen_huang:
+	input: huang="{chr}_huang.tsv", eigen="Eigen_hg19_noncoding_annot_chr{chr}.tab.bgz"
+	output: "{chr}_join.tsv"
+	shell: 
+		"""join -t$'\t' <(bawk '{{print $3,$4,$1}}' {input.huang} | sort -k1,1) <(zcat {input.eigen} | cut -f 2,32 | sed 1d | sort -k1,1 | uniq) > {output}"""
+

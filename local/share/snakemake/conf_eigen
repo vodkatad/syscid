@@ -3,3 +3,5 @@ EIGEN_PREFIX='Eigen_hg19_noncoding_annot_'
 EIGEN_SUFFIXES=['tab.bgz', 'tab.bgz.tbi']
 #EIGEN_SUFFIXES=['tab.bgz']
 CHRS= ['chr'+ str(c) for c in range(1,23)]
+DCHRS= [str(c) for c in range(1,23)]
+#http://www.columbia.edu/~ii2135/eigen.html
