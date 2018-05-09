@@ -1,0 +1,5 @@
+#data@tungsteno:/mnt/purple/data/syscid/local/share/data$ wget -O caveman_s3.txt https://media.nature.com/original/nature-assets/ng/journal/v49/n12/extref/ng.3979-S3.txt
+CAVEMAN="/mnt/purple/data/syscid/local/share/data/caveman_s3.txt"
+CHRS= ['chr'+ str(c) for c in range(1,23)]
+DCHRS= [str(c) for c in range(1,23)]
+HAPLOREG="/mnt/purple/data/syscid/local/share/data/haploreg_v4.0_20151021.vcf.gz"

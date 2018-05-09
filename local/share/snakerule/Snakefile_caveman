@@ -1,0 +1,48 @@
+include: "conf.sk"
+
+# rank is rank in eqtl (or ?) but not for caveman probs.
+#zcat haploreg_v4.0_20151021.vcf.gz  | grep -v "^#" 
+
+# we have the same snp reported as eqtl for multiple genes sometimes, but this is a problem for our subsequent evaluation of rank aggreement,
+# so we get the highest probability for each snp.
+rule wanted_tissues:
+	input: caveman=CAVEMAN, annot=HAPLOREG
+	output: "selected_{tissue}"
+	shell: 
+		"""
+			sed 1d {input.caveman} | bawk '$1=="{wildcards.tissue}" {{print $3,$5}}' | grep "_" | tr "_" "\t" | cut -f 1,2,5 > {output}.tmp
+			sed 1d {input.caveman} | bawk '$1=="{wildcards.tissue}" {{print $3,$5}}' | grep -v "_" | \
+			translate -d -j -a -f 3 -k <(zcat {input.annot} | grep -v "^#" | cut -f 1,2,3) 1 | cut -f 2,3,4 | sort | uniq  >> {output}.tmp
+			bawk '{{print $1"_"$2,$3}}' {output}.tmp | sort -k1,1 | repeat_group_pipe 'sort -k2,2g | tail -n 1' 1 | tr "_" "\t" > {output}
+		"""
+
+#rule all_join:
+#	input: expand("{chr}_{tissue}_join.tsv", chr=DCHRS, tissue=["LCLs", "Geuvadis", "Blood"])
+
+rule geu_join:
+	input: expand("{chr}_Geuvadis_join.tsv", chr=DCHRS)
+
+rule huang:
+	input: huang="../eigen/{chr}_huang.tsv", score="selected_{tissue}"
+	output: "{chr}_{tissue}_join.tsv"
+	shell: 
+		"""join -a 1 -t$'\t' <(bawk '{{print $3,$4,$1}}' {input.huang} | sort -k1,1) \
+		<(cat {input.score} | bawk '$1=="{wildcards.chr}"{{print $2,$3}}'| sort -k1,1 | uniq) \
+		| bawk 'NF==3{{print $0,0}} NF==4{{print $0}}' > {output}"""
+
+# put together all eqtl from different tissues
+rule all_tissues:
+	input: caveman=CAVEMAN, annot=HAPLOREG
+	output: "selected_all"
+	shell: 
+		"""
+			echo -e "LCLs\nGeuvadis\nBlood" > {output}.tmp1
+			sed 1d {input.caveman} | grep -w -f {output}.tmp1 | bawk '{{print $3,$5}}' | grep "_" | tr "_" "\t" | cut -f 1,2,5 > {output}.tmp
+			sed 1d {input.caveman} | grep -w -f {output}.tmp1 | bawk '{{print $3,$5}}' | grep -v "_" | \
+			translate -d -j -a -f 3 -k <(zcat {input.annot} | grep -v "^#" | cut -f 1,2,3) 1 | cut -f 2,3,4 | sort | uniq  >> {output}.tmp
+			bawk '{{print $1"_"$2,$3}}' {output}.tmp | sort -k1,1 | repeat_group_pipe 'sort -k2,2g | tail -n 1' 1 | tr "_" "\t" > {output}
+			rm {output}.tmp {output}.tmp1
+		"""
+
+rule all_join:
+	input: expand("{chr}_all_join.tsv", chr=DCHRS)
